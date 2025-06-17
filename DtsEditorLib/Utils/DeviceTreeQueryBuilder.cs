@@ -17,19 +17,19 @@ namespace DtsEditorLib.Utils
             this.deviceTree = deviceTree;
         }
 
-        public DeviceTreeQueryBuilder WithProperty(string propertyName)
-        {
-            conditions.Add(node => node.Properties.ContainsKey(propertyName));
-            return this;
-        }
+        //public DeviceTreeQueryBuilder WithProperty(string propertyName)
+        //{
+        //    conditions.Add(node => node.Properties.ContainsKey(propertyName));
+        //    return this;
+        //}
 
-        public DeviceTreeQueryBuilder WithPropertyValue(string propertyName, object value)
-        {
-            conditions.Add(node =>
-                node.Properties.ContainsKey(propertyName) &&
-                ValuesEqual(node.Properties[propertyName].Value, value));
-            return this;
-        }
+        //public DeviceTreeQueryBuilder WithPropertyValue(string propertyName, object value)
+        //{
+        //    conditions.Add(node =>
+        //        node.Properties.ContainsKey(propertyName) &&
+        //        ValuesEqual(node.Properties[propertyName].Value, value));
+        //    return this;
+        //}
 
         public DeviceTreeQueryBuilder WithName(string name)
         {
@@ -37,13 +37,13 @@ namespace DtsEditorLib.Utils
             return this;
         }
 
-        public DeviceTreeQueryBuilder WithCompatible(string compatible)
-        {
-            conditions.Add(node =>
-                node.Properties.ContainsKey("compatible") &&
-                node.Properties["compatible"].Value?.ToString()?.Contains(compatible) == true);
-            return this;
-        }
+        //public DeviceTreeQueryBuilder WithCompatible(string compatible)
+        //{
+        //    conditions.Add(node =>
+        //        node.Properties.ContainsKey("compatible") &&
+        //        node.Properties["compatible"].Value?.ToString()?.Contains(compatible) == true);
+        //    return this;
+        //}
 
         public DeviceTreeQueryBuilder UnderPath(string ancestorPath)
         {
@@ -68,7 +68,7 @@ namespace DtsEditorLib.Utils
         private IEnumerable<DeviceTreeNode> FindAllNodes(DeviceTreeNode node)
         {
             yield return node;
-            foreach (var child in node.Children.Values)
+            foreach (var child in node.Children)
             {
                 foreach (var descendant in FindAllNodes(child))
                 {

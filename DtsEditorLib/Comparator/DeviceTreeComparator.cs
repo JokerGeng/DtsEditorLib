@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using DtsEditorLib.Models;
 
 namespace DtsEditorLib.Comparator
@@ -26,33 +25,34 @@ namespace DtsEditorLib.Comparator
 
         private void CompareProperties(DeviceTreeNode oldNode, DeviceTreeNode newNode, List<DeviceTreeDiff> diffs)
         {
-            var oldProps = oldNode?.Properties ?? new Dictionary<string, DeviceTreeProperty>();
-            var newProps = newNode?.Properties ?? new Dictionary<string, DeviceTreeProperty>();
+            var oldProps = oldNode?.Properties ?? new List<DeviceTreeProperty>();
+            var newProps = newNode?.Properties ?? new List<DeviceTreeProperty>();
 
             // 查找新增和修改的属性
             foreach (var newProp in newProps)
             {
-                if (!oldProps.ContainsKey(newProp.Key))
+                var find = oldProps.Find(t => t.Name == newProp.Name);
+                if (find == null)
                 {
                     diffs.Add(new DeviceTreeDiff
                     {
                         Type = DiffType.PropertyAdded,
                         Path = newNode.FullPath,
-                        PropertyName = newProp.Key,
-                        NewValue = newProp.Value.Value,
-                        Description = $"Property '{newProp.Key}' added"
+                        PropertyName = newProp.Name,
+                        NewValue = newProp.Value,
+                        Description = $"Property '{newProp.Name}' added"
                     });
                 }
-                else if (!ValuesEqual(oldProps[newProp.Key].Value, newProp.Value.Value))
+                else if (!ValuesEqual(find, newProp.Value))
                 {
                     diffs.Add(new DeviceTreeDiff
                     {
                         Type = DiffType.PropertyModified,
                         Path = newNode.FullPath,
-                        PropertyName = newProp.Key,
-                        OldValue = oldProps[newProp.Key].Value,
-                        NewValue = newProp.Value.Value,
-                        Description = $"Property '{newProp.Key}' modified"
+                        PropertyName = newProp.Name,
+                        OldValue = find.Value,
+                        NewValue = newProp.Value,
+                        Description = $"Property '{newProp.Name}' modified"
                     });
                 }
             }
@@ -60,15 +60,16 @@ namespace DtsEditorLib.Comparator
             // 查找删除的属性
             foreach (var oldProp in oldProps)
             {
-                if (!newProps.ContainsKey(oldProp.Key))
+                var find = newProps.Find(t => t.Name == oldProp.Name);
+                if (find == null)
                 {
                     diffs.Add(new DeviceTreeDiff
                     {
                         Type = DiffType.PropertyRemoved,
                         Path = oldNode.FullPath,
-                        PropertyName = oldProp.Key,
-                        OldValue = oldProp.Value.Value,
-                        Description = $"Property '{oldProp.Key}' removed"
+                        PropertyName = oldProp.Name,
+                        OldValue = oldProp.Value,
+                        Description = $"Property '{oldProp.Name}' removed"
                     });
                 }
             }
@@ -76,41 +77,43 @@ namespace DtsEditorLib.Comparator
 
         private void CompareChildren(DeviceTreeNode oldNode, DeviceTreeNode newNode, List<DeviceTreeDiff> diffs)
         {
-            var oldChildren = oldNode?.Children ?? new Dictionary<string, DeviceTreeNode>();
-            var newChildren = newNode?.Children ?? new Dictionary<string, DeviceTreeNode>();
+            var oldChildren = oldNode?.Children ?? new List<DeviceTreeNode>();
+            var newChildren = newNode?.Children ?? new List<DeviceTreeNode>();
 
             // 查找新增和修改的子节点
             foreach (var newChild in newChildren)
             {
-                if (!oldChildren.ContainsKey(newChild.Key))
+                var find = oldChildren.Find(t => t.Name == newChild.Name);
+                if (find == null)
                 {
                     diffs.Add(new DeviceTreeDiff
                     {
                         Type = DiffType.NodeAdded,
-                        Path = newChild.Value.FullPath,
-                        Description = $"Node '{newChild.Key}' added"
+                        Path = newChild.FullPath,
+                        Description = $"Node '{newChild.Name}' added"
                     });
 
                     // 递归添加所有子属性和子节点作为新增项
-                    AddAllDescendantsAsDiffs(newChild.Value, DiffType.NodeAdded, diffs);
+                    AddAllDescendantsAsDiffs(newChild, DiffType.NodeAdded, diffs);
                 }
                 else
                 {
                     // 递归比较子节点
-                    CompareNodes(oldChildren[newChild.Key], newChild.Value, diffs);
+                    CompareNodes(find, newChild, diffs);
                 }
             }
 
             // 查找删除的子节点
             foreach (var oldChild in oldChildren)
             {
-                if (!newChildren.ContainsKey(oldChild.Key))
+                var find = newChildren.Find(t => t.Name == oldChild.Name);
+                if (find == null)
                 {
                     diffs.Add(new DeviceTreeDiff
                     {
                         Type = DiffType.NodeRemoved,
-                        Path = oldChild.Value.FullPath,
-                        Description = $"Node '{oldChild.Key}' removed"
+                        Path = oldChild.FullPath,
+                        Description = $"Node '{oldChild.Name}' removed"
                     });
                 }
             }
@@ -119,7 +122,7 @@ namespace DtsEditorLib.Comparator
         private void AddAllDescendantsAsDiffs(DeviceTreeNode node, DiffType diffType, List<DeviceTreeDiff> diffs)
         {
             // 添加所有属性
-            foreach (var property in node.Properties.Values)
+            foreach (var property in node.Properties)
             {
                 diffs.Add(new DeviceTreeDiff
                 {
@@ -132,7 +135,7 @@ namespace DtsEditorLib.Comparator
             }
 
             // 递归处理子节点
-            foreach (var child in node.Children.Values)
+            foreach (var child in node.Children)
             {
                 diffs.Add(new DeviceTreeDiff
                 {

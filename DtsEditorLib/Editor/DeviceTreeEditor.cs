@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using DtsEditorLib.Models;
 
 namespace DtsEditorLib.Editor
@@ -39,7 +38,7 @@ namespace DtsEditorLib.Editor
                 return false;
 
             var nodeName = node.Name;
-            node.Parent.Children.Remove(nodeName);
+            node.Parent.Children.Remove(node);
 
             // 清理标签引用
             var labelsToRemove = deviceTree.Labels.Where(kvp => kvp.Value == node).Select(kvp => kvp.Key).ToList();
@@ -71,21 +70,26 @@ namespace DtsEditorLib.Editor
         public bool UpdateProperty(string nodePath, string propertyName, object newValue)
         {
             var node = deviceTree.FindByPath(nodePath);
-            if (node?.Properties.ContainsKey(propertyName) != true)
+            var find = node?.Properties.Find(p => p.Name == propertyName);
+            if (find == null)
+            {
                 return false;
+            }
 
-            node.Properties[propertyName].Value = newValue;
+            find.Value = newValue;
             return true;
         }
 
         // 删除属性
         public bool RemoveProperty(string nodePath, string propertyName)
         {
-            var node = deviceTree.FindByPath(nodePath);
-            if (node?.Properties.ContainsKey(propertyName) != true)
+            var node = deviceTree.FindByPath(nodePath); 
+            var find = node?.Properties.Find(p => p.Name == propertyName);
+            if (find == null)
+            {
                 return false;
-
-            return node.Properties.Remove(propertyName);
+            }
+            return node.Properties.Remove(find);
         }
 
         // 移动节点
@@ -98,7 +102,7 @@ namespace DtsEditorLib.Editor
                 return false;
 
             // 从原父节点移除
-            sourceNode.Parent.Children.Remove(sourceNode.Name);
+            sourceNode.Parent.Children.Remove(sourceNode);
 
             // 添加到新父节点
             targetParent.AddChild(sourceNode);
@@ -135,7 +139,7 @@ namespace DtsEditorLib.Editor
             };
 
             // 复制属性
-            foreach (var property in source.Properties.Values)
+            foreach (var property in source.Properties)
             {
                 var clonedProperty = new DeviceTreeProperty(property.Name)
                 {
@@ -147,7 +151,7 @@ namespace DtsEditorLib.Editor
             }
 
             // 递归复制子节点
-            foreach (var child in source.Children.Values)
+            foreach (var child in source.Children)
             {
                 var clonedChild = CloneNode(child);
                 cloned.AddChild(clonedChild);
@@ -187,17 +191,17 @@ namespace DtsEditorLib.Editor
 
         private void FindAndReplaceInNode(DeviceTreeNode node, string propertyName, object oldValue, object newValue, ref int count)
         {
-            if (node.Properties.ContainsKey(propertyName))
+            var find = node.Properties.Find(p => p.Name == propertyName);
+            if (find != null)
             {
-                var property = node.Properties[propertyName];
-                if (Equals(property.Value, oldValue))
+                if (Equals(find.Value, oldValue))
                 {
-                    property.Value = newValue;
+                    find.Value = newValue;
                     count++;
                 }
             }
 
-            foreach (var child in node.Children.Values)
+            foreach (var child in node.Children)
             {
                 FindAndReplaceInNode(child, propertyName, oldValue, newValue, ref count);
             }

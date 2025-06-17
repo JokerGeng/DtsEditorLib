@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System.Collections.Generic;
 using DtsEditorLib.Models;
 
 namespace DtsEditorLib.Validator
@@ -20,9 +18,10 @@ namespace DtsEditorLib.Validator
         public void Validate(DeviceTreeNode node, DeviceTree deviceTree, List<ValidationResult> results)
         {
             // 检查是否有compatible属性来确定设备类型
-            if (node.Properties.ContainsKey("compatible"))
+            var find = node.Properties.Find(t => t.Name == "compatible");
+            if (find != null)
             {
-                var compatible = node.Properties["compatible"].Value?.ToString();
+                var compatible = find.Value?.ToString();
                 if (!string.IsNullOrEmpty(compatible))
                 {
                     CheckRequiredProperties(node, compatible, results);
@@ -43,7 +42,8 @@ namespace DtsEditorLib.Validator
 
             foreach (var requiredProp in requiredProps[nodeType])
             {
-                if (!node.Properties.ContainsKey(requiredProp))
+                var find = node.Properties.Find(t => t.Name == requiredProp);
+                if (find == null)
                 {
                     results.Add(new ValidationResult
                     {

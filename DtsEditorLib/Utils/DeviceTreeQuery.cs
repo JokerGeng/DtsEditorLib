@@ -38,8 +38,8 @@ namespace DtsEditorLib.Utils
         {
             return WithProperty(propertyName).Where(node =>
             {
-                var prop = node.Properties[propertyName];
-                return ValuesEqual(prop.Value, value);
+                var find = node.Properties.Find(p => p.Name == propertyName);
+                return ValuesEqual(find.Value, value);
             });
         }
 
@@ -48,7 +48,7 @@ namespace DtsEditorLib.Utils
         {
             return WithProperty("compatible").Where(node =>
             {
-                var compatibleProp = node.Properties["compatible"];
+                var compatibleProp = node.Properties.Find(p => p.Name == "compatible");
                 if (compatibleProp.Value is string compatibleStr)
                 {
                     return compatibleStr.Contains(compatible);
@@ -93,12 +93,12 @@ namespace DtsEditorLib.Utils
         {
             return WithProperty("compatible").Where(node =>
             {
-                var compatible = node.Properties["compatible"].Value?.ToString();
+                var compatible = node.Properties.Find(p => p.Name == "compatible");
                 return compatible != null && (
-                    compatible.Contains("simple-bus") ||
-                    compatible.Contains("i2c") ||
-                    compatible.Contains("spi") ||
-                    compatible.Contains("pci")
+                    compatible.Value.ToString().Contains("simple-bus") ||
+                    compatible.Value.ToString().Contains("i2c") ||
+                    compatible.Value.ToString().Contains("spi") ||
+                    compatible.Value.ToString().Contains("pci")
                 );
             });
         }
@@ -113,7 +113,7 @@ namespace DtsEditorLib.Utils
         public IEnumerable<DeviceTreeNode> ChildrenOf(string parentPath)
         {
             var parent = ByPath(parentPath);
-            return parent?.Children.Values ?? Enumerable.Empty<DeviceTreeNode>();
+            return parent?.Children ?? Enumerable.Empty<DeviceTreeNode>();
         }
 
         public IEnumerable<DeviceTreeNode> DescendantsOf(string ancestorPath)
@@ -121,7 +121,7 @@ namespace DtsEditorLib.Utils
             var ancestor = ByPath(ancestorPath);
             if (ancestor == null) yield break;
 
-            foreach (var child in ancestor.Children.Values)
+            foreach (var child in ancestor.Children)
             {
                 yield return child;
                 foreach (var descendant in DescendantsOf(child.FullPath))
@@ -139,9 +139,9 @@ namespace DtsEditorLib.Utils
 
             foreach (var node in allNodes)
             {
-                foreach (var property in node.Properties.Keys)
+                foreach (var property in node.Properties)
                 {
-                    stats[property] = stats.ContainsKey(property) ? stats[property] + 1 : 1;
+                    stats[property.Name] = stats.ContainsKey(property.Name) ? stats[property.Name] + 1 : 1;
                 }
             }
 
@@ -155,10 +155,10 @@ namespace DtsEditorLib.Utils
 
             foreach (var node in nodesWithCompatible)
             {
-                var compatible = node.Properties["compatible"].Value?.ToString();
-                if (!string.IsNullOrEmpty(compatible))
+                var compatible = node.Properties.Find(p => p.Name == "compatible");
+                if (!string.IsNullOrEmpty(compatible?.Value.ToString()))
                 {
-                    stats[compatible] = stats.ContainsKey(compatible) ? stats[compatible] + 1 : 1;
+                    stats[compatible.Name] = stats.ContainsKey(compatible.Name) ? stats[compatible.Name] + 1 : 1;
                 }
             }
 
@@ -168,10 +168,14 @@ namespace DtsEditorLib.Utils
         // 私有辅助方法
         private IEnumerable<DeviceTreeNode> FindNodesWithProperty(DeviceTreeNode node, string propertyName)
         {
-            if (node.Properties.ContainsKey(propertyName))
-                yield return node;
-
-            foreach (var child in node.Children.Values)
+            foreach(var property in node.Properties)
+            {
+                if(property.Name == propertyName)
+                {
+                    yield return node;
+                }
+            }
+            foreach (var child in node.Children)
             {
                 foreach (var result in FindNodesWithProperty(child, propertyName))
                 {
@@ -184,7 +188,7 @@ namespace DtsEditorLib.Utils
         {
             yield return node;
 
-            foreach (var child in node.Children.Values)
+            foreach (var child in node.Children)
             {
                 foreach (var descendant in FindAllNodes(child))
                 {

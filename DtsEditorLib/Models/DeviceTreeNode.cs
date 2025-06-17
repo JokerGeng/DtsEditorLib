@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Reflection.Metadata.Ecma335;
 
 namespace DtsEditorLib.Models
 {
@@ -9,8 +10,8 @@ namespace DtsEditorLib.Models
         public string Name { get; set; }
         public string Label { get; set; }
         public uint? UnitAddress { get; set; }
-        public Dictionary<string, DeviceTreeProperty> Properties { get; set; }
-        public Dictionary<string, DeviceTreeNode> Children { get; set; }
+        public List<DeviceTreeProperty> Properties { get; set; }
+        public List<DeviceTreeNode> Children { get; set; }
         public DeviceTreeNode Parent { get; set; }
         public int LineNumber { get; set; }
         public List<string> Comments { get; set; }
@@ -19,8 +20,8 @@ namespace DtsEditorLib.Models
         public DeviceTreeNode(string name)
         {
             Name = name;
-            Properties = new Dictionary<string, DeviceTreeProperty>();
-            Children = new Dictionary<string, DeviceTreeNode>();
+            Properties = new List<DeviceTreeProperty>();
+            Children = new List<DeviceTreeNode>();
             Comments = new List<string>();
         }
 
@@ -37,16 +38,16 @@ namespace DtsEditorLib.Models
         // 添加属性
         public void AddProperty(string name, object value, PropertyValueType type = PropertyValueType.String)
         {
-            Properties[name] = new DeviceTreeProperty(name)
+            Properties.Add(new DeviceTreeProperty(name)
             {
                 Value = value,
                 ValueType = type
-            };
+            });
         }
 
         public void AddProperty(DeviceTreeProperty property)
         {
-            Properties[property.Name] = property;
+            Properties.Add(property);
         }
 
         // 添加子节点
@@ -58,7 +59,7 @@ namespace DtsEditorLib.Models
                 Label = label,
                 Parent = this
             };
-            Children[name] = child;
+            Children.Add(child);    
             return child;
         }
 
@@ -66,7 +67,7 @@ namespace DtsEditorLib.Models
         public void AddChild(DeviceTreeNode child)
         {
             child.Parent = this;
-            Children[child.Name] = child;
+            Children.Add(child);
         }
 
         public DeviceTreeNode FindChild(string path)
@@ -90,9 +91,12 @@ namespace DtsEditorLib.Models
             foreach (var part in parts)
             {
                 if (string.IsNullOrEmpty(part)) continue;
-                if (!current.Children.ContainsKey(part))
-                    return null;
-                current = current.Children[part];
+                var find= current.Children.Find(n=>n.Name==part);
+                if(find==null)
+                {
+                    return null ;
+                }
+                current= find;
             }
 
             return current;

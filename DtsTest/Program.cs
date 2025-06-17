@@ -74,15 +74,15 @@ namespace DtsTest
             Console.WriteLine("\n=== 查询设备树 ===");
 
             // 按路径查找
-            var cpuNode = deviceTree.FindByPath("/cpus/cpu@0");
-            if (cpuNode != null)
-            {
-                Console.WriteLine($"找到CPU节点: {cpuNode.FullPath}");
-                if (cpuNode.Properties.ContainsKey("compatible"))
-                {
-                    Console.WriteLine($"  Compatible: {cpuNode.Properties["compatible"].Value}");
-                }
-            }
+            //var cpuNode = deviceTree.FindByPath("/cpus/cpu@0");
+            //if (cpuNode != null)
+            //{
+            //    Console.WriteLine($"找到CPU节点: {cpuNode.FullPath}");
+            //    if (cpuNode.Properties.ContainsKey("compatible"))
+            //    {
+            //        Console.WriteLine($"  Compatible: {cpuNode.Properties["compatible"].Value}");
+            //    }
+            //}
 
             // 按标签查找
             var gicNode = deviceTree.FindByLabel("gic");
@@ -92,7 +92,7 @@ namespace DtsTest
             }
 
             // 搜索具有特定属性的节点
-            SearchNodesWithProperty(deviceTree.Root, "interrupt-controller");
+            //SearchNodesWithProperty(deviceTree.Root, "interrupt-controller");
 
             // 示例6: 高级编辑操作
             Console.WriteLine("\n=== 高级编辑操作 ===");
@@ -119,17 +119,17 @@ namespace DtsTest
             Console.WriteLine("已生成最终的 final_output.dts 文件");
         }
 
-        static void SearchNodesWithProperty(DeviceTreeNode node, string propertyName)
-        {
-            if (node.Properties.ContainsKey(propertyName))
-            {
-                Console.WriteLine($"  找到具有 {propertyName} 属性的节点: {node.FullPath}");
-            }
+        //static void SearchNodesWithProperty(DeviceTreeNode node, string propertyName)
+        //{
+        //    if (node.Properties.ContainsKey(propertyName))
+        //    {
+        //        Console.WriteLine($"  找到具有 {propertyName} 属性的节点: {node.FullPath}");
+        //    }
 
-            foreach (var child in node.Children.Values)
-            {
-                SearchNodesWithProperty(child, propertyName);
-            }
-        }
+        //    foreach (var child in node.Children.Values)
+        //    {
+        //        SearchNodesWithProperty(child, propertyName);
+        //    }
+        //}
     }
 }

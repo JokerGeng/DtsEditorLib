@@ -12,7 +12,7 @@ namespace DtsEditorLib.Validator
 
         public void Validate(DeviceTreeNode node, DeviceTree deviceTree, List<ValidationResult> results)
         {
-            foreach (var property in node.Properties.Values)
+            foreach (var property in node.Properties)
             {
                 ValidatePropertyType(property, node, results);
             }

@@ -1,7 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using DtsEditorLib.Models;
 
 namespace DtsEditorLib.Validator
@@ -16,10 +14,10 @@ namespace DtsEditorLib.Validator
             // 如果节点有子节点，应该有 #address-cells 和 #size-cells
             if (node.Children.Any())
             {
-                var hasAddressCells = node.Properties.ContainsKey("#address-cells");
-                var hasSizeCells = node.Properties.ContainsKey("#size-cells");
+                var hasAddressCells = node.Properties.Find(p => p.Name.Contains("#address-cells"));
+                var hasSizeCells = node.Properties.Find(p => p.Name.Contains("#size-cells"));
 
-                if (!hasAddressCells)
+                if (hasAddressCells == null)
                 {
                     results.Add(new ValidationResult
                     {
@@ -31,7 +29,7 @@ namespace DtsEditorLib.Validator
                     });
                 }
 
-                if (!hasSizeCells)
+                if (hasSizeCells == null)
                 {
                     results.Add(new ValidationResult
                     {

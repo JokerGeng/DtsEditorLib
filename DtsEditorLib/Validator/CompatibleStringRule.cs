@@ -1,8 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using DtsEditorLib.Models;
+﻿using System.Collections.Generic;
 using System.Text.RegularExpressions;
+using DtsEditorLib.Models;
 
 namespace DtsEditorLib.Validator
 {
@@ -14,9 +12,9 @@ namespace DtsEditorLib.Validator
 
         public void Validate(DeviceTreeNode node, DeviceTree deviceTree, List<ValidationResult> results)
         {
-            if (node.Properties.ContainsKey("compatible"))
+            var compatible = node.Properties.Find(p => p.Name == "compatible");
+            if (compatible != null)
             {
-                var compatible = node.Properties["compatible"];
                 var compatibleValue = compatible.Value?.ToString();
 
                 if (!string.IsNullOrEmpty(compatibleValue) && !CompatibleRegex.IsMatch(compatibleValue))

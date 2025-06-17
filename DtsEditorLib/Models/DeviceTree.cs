@@ -64,7 +64,7 @@ namespace DtsEditorLib.Models
         private IEnumerable<DeviceTreeNode> GetAllNodesRecursive(DeviceTreeNode node)
         {
             yield return node;
-            foreach (var child in node.Children.Values)
+            foreach (var child in node.Children)
             {
                 foreach (var descendant in GetAllNodesRecursive(child))
                 {

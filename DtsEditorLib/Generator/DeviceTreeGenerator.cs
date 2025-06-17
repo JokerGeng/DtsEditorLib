@@ -83,7 +83,7 @@ namespace DtsEditorLib.Generator
             }
 
             // 生成属性
-            foreach (var property in node.Properties.Values.OrderBy(p => p.Name))
+            foreach (var property in node.Properties)
             {
                 GenerateProperty(sb, property);
             }
@@ -95,7 +95,7 @@ namespace DtsEditorLib.Generator
             }
 
             // 生成子节点
-            var childNodes = node.Children.Values.ToList();//.OrderBy(n => n.Name).ToList();
+            var childNodes = node.Children.ToList();//.OrderBy(n => n.Name).ToList();
             for (int i = 0; i < childNodes.Count; i++)
             {
                 GenerateNode(sb, childNodes[i]);
@@ -139,7 +139,7 @@ namespace DtsEditorLib.Generator
 
                 case PropertyValueType.IntegerArray:
                     var intArray = property.GetIntegerArray();
-                    sb.Append($"<{string.Join(" ", intArray)}>");
+                    sb.Append($"<{string.Join(" ", intArray)}>;");
                     break;
 
                 case PropertyValueType.ByteArray:
@@ -149,13 +149,11 @@ namespace DtsEditorLib.Generator
                     break;
 
                 case PropertyValueType.LabelReference:
-                    sb.Append($"&{property.Value}");
+                    sb.Append($"&{property.Value};");
                     break;
 
                 case PropertyValueType.ValueReference:
-                    sb.Append($"<");
-                    sb.Append($"&{property.Value}");
-                    sb.Append($">");
+                    sb.Append($"<&{property.Value}>");
                     break;
 
                 case PropertyValueType.Boolean:

@@ -31,7 +31,7 @@ namespace DtsEditorLib.Validator
             }
 
             // 递归验证子节点
-            foreach (var child in node.Children.Values)
+            foreach (var child in node.Children)
             {
                 ValidateNode(child, deviceTree);
             }
