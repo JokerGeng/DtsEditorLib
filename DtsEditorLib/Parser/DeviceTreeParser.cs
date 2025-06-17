@@ -1,26 +1,28 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
-using DtsEditorLib.Models;
 using System.Text.RegularExpressions;
 using DtsEditorLib.Exceptions;
+using DtsEditorLib.Models;
 
 namespace DtsEditorLib.Parser
 {
     public class DeviceTreeParser
     {
-        private readonly Regex _nodeRegex = new Regex(@"^(?:(\w+):\s*)?(\w+)(?:@([0-9a-fA-F]+))?\s*\{");
-        private readonly Regex _propertyRegex = new Regex(@"^(\w+)(?:\s*=\s*(.+?))?;");
-        private readonly Regex _includeRegex = new Regex(@"^#include\s+[""<]([^"">]+)["">\s]");
+        private static readonly Regex NodeRegex = new Regex(@"^(\w+:)?\s*(\w+)(@[\w,]+)?\s*\{?$");
+        private static readonly Regex PropertyRegex = new Regex(@"^(\w+[-\w]*)\s*(=\s*(.+))?\s*;?$");
+        private static readonly Regex IncludeRegex = new Regex(@"#include\s+[""<]([^"">]+)["">\s*]");
+        private static readonly Regex LabelRegex = new Regex(@"^(\w+):\s*(.+)$");
+        private static readonly Regex SharpPropertyRegex = new Regex(@"^\s*(#\w[\w\-]*)\s*=\s*(<[^>]*>)[\s;]*");
 
-        public DeviceTreeDoc ParseFile(string filePath)
+        public DeviceTree ParseFile(string filePath)
         {
             try
             {
                 var content = File.ReadAllText(filePath);
-                return ParseContent(content, Path.GetDirectoryName(filePath));
+                return Parse(content, Path.GetFileName(filePath));
             }
             catch (Exception ex)
             {
@@ -28,106 +30,326 @@ namespace DtsEditorLib.Parser
             }
         }
 
-        public DeviceTreeDoc ParseContent(string content, string basePath = null)
+        public DeviceTree Parse(string content, string fileName = null)
         {
-            var deviceTree = new DeviceTreeDoc();
+            var deviceTree = new DeviceTree { FileName = fileName };
+            var lines = content.Split('\n');
+
+            var context = new ParseContext
+            {
+                Lines = PreprocessLinesRecursive(lines, 0, new List<ProcessedLine>(), false),
+                DeviceTree = deviceTree,
+                CurrentIndex = 0
+            };
+
+            // 递归解析根节点内容
+            ParseNodeContent(deviceTree.Root, context);
+
+            return deviceTree;
+        }
+
+        // 递归预处理行（处理注释）
+        private List<ProcessedLine> PreprocessLinesRecursive(string[] lines, int index, List<ProcessedLine> result, bool inMultiLineComment)
+        {
+            if (index >= lines.Length)
+                return result;
+
+            var line = lines[index].Trim();
+
+            if (string.IsNullOrEmpty(line))
+            {
+                return PreprocessLinesRecursive(lines, index + 1, result, inMultiLineComment);
+            }
+
+            // 处理多行注释开始
+            if (line.StartsWith("/*"))
+            {
+                inMultiLineComment = true;
+                if (line.EndsWith("*/"))
+                {
+                    inMultiLineComment = false;
+                }
+                return PreprocessLinesRecursive(lines, index + 1, result, inMultiLineComment);
+            }
+
+            // 处理多行注释结束
+            if (inMultiLineComment)
+            {
+                if (line.EndsWith("*/"))
+                {
+                    inMultiLineComment = false;
+                }
+                return PreprocessLinesRecursive(lines, index + 1, result, inMultiLineComment);
+            }
+
+            // 跳过单行注释
+            if (line.StartsWith("//"))
+            {
+                return PreprocessLinesRecursive(lines, index + 1, result, inMultiLineComment);
+            }
+
+            // 移除行尾注释
+            var commentIndex = line.IndexOf("//");
+            if (commentIndex >= 0)
+            {
+                line = line.Substring(0, commentIndex).Trim();
+            }
+
+            if (!string.IsNullOrEmpty(line))
+            {
+                result.Add(new ProcessedLine { Content = line, LineNumber = index + 1 });
+            }
+
+            return PreprocessLinesRecursive(lines, index + 1, result, inMultiLineComment);
+        }
+
+
+        // 相应的修改ParseNodeContent方法
+        private void ParseNodeContent(DeviceTreeNode currentNode, ParseContext context)
+        {
+            if (context.CurrentIndex >= context.Lines.Count)
+                return;
+
+            var line = context.Lines[context.CurrentIndex];
+            var contentLine = line.Content;
+
+            // 处理版本声明
+            if (contentLine.StartsWith("/dts-v"))
+            {
+                context.DeviceTree.Version = contentLine;
+                context.CurrentIndex++;
+                ParseNodeContent(currentNode, context); // 递归继续处理
+            }
+
+            // 处理包含文件
+            var includeMatch = IncludeRegex.Match(contentLine);
+            if (includeMatch.Success)
+            {
+                context.DeviceTree.Includes.Add(includeMatch.Groups[1].Value);
+                context.CurrentIndex++;
+                ParseNodeContent(currentNode, context); // 递归继续处理
+                return;
+            }
+
+            // 处理节点结束
+            if (contentLine.StartsWith("}"))
+            {
+                context.CurrentIndex++;
+                return; // 递归返回
+            }
+
+            // 处理标签
+            var labelMatch = LabelRegex.Match(contentLine);
+            if (labelMatch.Success)
+            {
+                var labelName = labelMatch.Groups[1].Value;
+                contentLine = labelMatch.Groups[2].Value;
+            }
+
+            // 处理节点开始
+            var nodeMatch = NodeRegex.Match(contentLine);
+            if (nodeMatch.Success)
+            {
+                var childNode = ParseNodeDeclaration(nodeMatch, line.LineNumber, labelMatch, context.DeviceTree);
+                currentNode.AddChild(childNode);
+
+                context.CurrentIndex++;
+
+                if (contentLine.EndsWith("{"))
+                {
+                    ParseNodeContent(childNode, context); // 递归解析子节点
+                }
+
+                ParseNodeContent(currentNode, context); // 递归继续处理同级节点
+                return;
+            }
+
+            // 处理属性
+            var propertyMatch = PropertyRegex.Match(contentLine);
+            if (propertyMatch.Success)
+            {
+                var property = ParseProperty(propertyMatch.Groups[1].Value,
+                                           propertyMatch.Groups[3].Value,
+                                           line.LineNumber);
+                currentNode.AddProperty(property);
+                context.CurrentIndex++;
+                ParseNodeContent(currentNode, context); // 递归继续处理
+                return;
+            }
+
+            //#开始属性
+            var sharpPropertyMatch = SharpPropertyRegex.Match(contentLine);
+            if (sharpPropertyMatch.Success)
+            {
+                var property = ParseProperty(sharpPropertyMatch.Groups[1].Value,
+                                             sharpPropertyMatch.Groups[2].Value,
+                                             line.LineNumber);
+                currentNode.AddProperty(property);
+                context.CurrentIndex++;
+                ParseNodeContent(currentNode, context); // 递归继续处理
+                return;
+            }
+
+            // 跳过无法识别的行
+            context.CurrentIndex++;
+            ParseNodeContent(currentNode, context); // 递归继续处理
+        }
+
+        // 解析节点声明
+        private DeviceTreeNode ParseNodeDeclaration(Match nodeMatch, int lineNumber, Match labelMatch, DeviceTree deviceTree)
+        {
+            var nodeName = nodeMatch.Groups[2].Value;
+            var address = nodeMatch.Groups[3].Success ?
+                         Convert.ToUInt32(nodeMatch.Groups[3].Value.TrimStart('@'), 16) : (uint?)null;
+
+            var node = new DeviceTreeNode(nodeName)
+            {
+                UnitAddress = address,
+                LineNumber = lineNumber
+            };
+
+            // 处理标签
+            if (labelMatch.Success)
+            {
+                deviceTree.AddLabel(labelMatch.Groups[1].Value, node);
+            }
+
+            return node;
+        }
+
+        public DeviceTree Parse1(string content, string fileName = null)
+        {
+            var deviceTree = new DeviceTree { FileName = fileName };
             var lines = content.Split('\n').Select((line, index) => new { Content = line.Trim(), LineNumber = index + 1 }).ToArray();
-            var currentNode = deviceTree.Root;
-            var nodeStack = new Stack<DeviceTreeNode>();
+
+            var stack = new Stack<DeviceTreeNode>();
+            stack.Push(deviceTree.Root);
 
             for (int i = 0; i < lines.Length; i++)
             {
                 var line = lines[i];
-                var content_line = line.Content;
+                var content_line = RemoveComments(line.Content);
 
-                // 跳过空行和注释
-                if (string.IsNullOrWhiteSpace(content_line) || content_line.StartsWith("//"))
+                if (string.IsNullOrWhiteSpace(content_line))
                     continue;
 
-                try
+                // 处理版本声明
+                if (content_line.StartsWith("/dts-v"))
                 {
-                    // 处理版本声明
-                    if (content_line.StartsWith("/dts-v"))
-                    {
-                        deviceTree.Version = content_line;
-                        continue;
-                    }
+                    deviceTree.Version = content_line;
+                    continue;
+                }
 
-                    // 处理包含文件
-                    var includeMatch = _includeRegex.Match(content_line);
-                    if (includeMatch.Success)
-                    {
-                        var includePath = includeMatch.Groups[1].Value;
-                        deviceTree.Includes.Add(includePath);
+                // 处理包含文件
+                var includeMatch = IncludeRegex.Match(content_line);
+                if (includeMatch.Success)
+                {
+                    deviceTree.Includes.Add(includeMatch.Groups[1].Value);
+                    continue;
+                }
 
-                        // 如果提供了基路径，递归解析包含的文件
-                        if (!string.IsNullOrEmpty(basePath))
+                // 处理节点结束
+                if (content_line.StartsWith("}"))
+                {
+                    if (stack.Count > 1)
+                        stack.Pop();
+                    continue;
+                }
+
+                // 处理标签
+                var labelMatch = LabelRegex.Match(content_line);
+                if (labelMatch.Success)
+                {
+                    var labelName = labelMatch.Groups[1].Value;
+                    content_line = labelMatch.Groups[2].Value;
+
+                    // 标签处理逻辑
+                    // 1. 检查标签是否指向节点
+                    var assignNodeMatch = NodeRegex.Match(content_line);
+                    if (assignNodeMatch.Success)
+                    {
+                        // 标签指向节点 - 将在节点创建后处理
+                        // 这里暂时存储标签名，稍后在节点创建时关联
+                        var nodeName = assignNodeMatch.Groups[2].Value;
+                        var address = assignNodeMatch.Groups[3].Success ?
+                         Convert.ToUInt32(assignNodeMatch.Groups[3].Value.TrimStart('@'), 16) : (uint?)null;
+
+                        var node = new DeviceTreeNode(nodeName)
                         {
-                            var fullIncludePath = Path.Combine(basePath, includePath);
-                            if (File.Exists(fullIncludePath))
-                            {
-                                var includedTree = ParseFile(fullIncludePath);
-                                MergeDeviceTrees(deviceTree, includedTree);
-                            }
-                        }
-                        continue;
-                    }
+                            UnitAddress = address,
+                            LineNumber = line.LineNumber
+                        };
 
-                    // 处理节点开始
-                    var nodeMatch = _nodeRegex.Match(content_line);
-                    if (nodeMatch.Success)
-                    {
-                        var label = nodeMatch.Groups[1].Success ? nodeMatch.Groups[1].Value : null;
-                        var nodeName = nodeMatch.Groups[2].Value;
-                        var address = nodeMatch.Groups[3].Success ?
-                            Convert.ToUInt32(nodeMatch.Groups[3].Value, 16) : (uint?)null;
+                        stack.Peek().AddChild(node);
 
-                        nodeStack.Push(currentNode);
-                        currentNode = currentNode.AddChild(nodeName, address, label);
+                        // 将标签与节点关联
+                        deviceTree.AddLabel(labelName, node);
+                        node.Labels.Add(labelName);
 
-                        if (!string.IsNullOrEmpty(label))
+                        if (content_line.EndsWith("{"))
                         {
-                            deviceTree.Labels[label] = currentNode;
+                            stack.Push(node);
                         }
-                        continue;
-                    }
-
-                    // 处理节点结束
-                    if (content_line == "}")
-                    {
-                        if (nodeStack.Count > 0)
-                        {
-                            currentNode = nodeStack.Pop();
-                        }
-                        continue;
-                    }
-
-                    // 处理属性
-                    var propertyMatch = _propertyRegex.Match(content_line);
-                    if (propertyMatch.Success)
-                    {
-                        var propName = propertyMatch.Groups[1].Value;
-                        var propValue = propertyMatch.Groups[2].Success ? propertyMatch.Groups[2].Value.Trim() : null;
-
-                        var property = ParseProperty(propName, propValue);
-                        currentNode.Properties[propName] = property;
                         continue;
                     }
                 }
-                catch (Exception ex)
+
+                // 处理节点
+                var nodeMatch = NodeRegex.Match(content_line);
+                if (nodeMatch.Success)
                 {
-                    throw new DeviceTreeParseException($"Parse error at line {line.LineNumber}: {ex.Message}", ex);
+                    var nodeName = nodeMatch.Groups[2].Value;
+                    var address = nodeMatch.Groups[3].Success ?
+                        Convert.ToUInt32(nodeMatch.Groups[3].Value.TrimStart('@'), 16) : (uint?)null;
+                    var node = new DeviceTreeNode(nodeName)
+                    {
+                        UnitAddress = address,
+                        LineNumber = line.LineNumber
+                    };
+
+                    stack.Peek().AddChild(node);
+
+                    if (labelMatch.Success)
+                    {
+                        deviceTree.AddLabel(labelMatch.Groups[1].Value, node);
+                    }
+
+                    if (content_line.EndsWith("{"))
+                    {
+                        stack.Push(node);
+                    }
+                    continue;
+                }
+
+                // 处理属性
+                var propertyMatch = PropertyRegex.Match(content_line);
+                if (propertyMatch.Success)
+                {
+                    var property = ParseProperty(propertyMatch.Groups[1].Value,
+                                               propertyMatch.Groups[3].Value,
+                                               line.LineNumber);
+                    stack.Peek().AddProperty(property);
+                }
+
+                //#开始属性
+                var sharpPropertyMatch = SharpPropertyRegex.Match(content_line);
+                if (sharpPropertyMatch.Success)
+                {
+                    var property = ParseProperty(sharpPropertyMatch.Groups[1].Value,
+                                                 sharpPropertyMatch.Groups[2].Value,
+                                                 line.LineNumber);
+                    stack.Peek().AddProperty(property);
                 }
             }
 
             return deviceTree;
         }
 
-        private DeviceTreeProperty ParseProperty(string name, string value)
+        private DeviceTreeProperty ParseProperty(string name, string value, int lineNumber)
         {
-            var property = new DeviceTreeProperty
+            var property = new DeviceTreeProperty(name)
             {
-                Name = name,
+                LineNumber = lineNumber,
                 RawValue = value
             };
 
@@ -137,7 +359,7 @@ namespace DtsEditorLib.Parser
                 return property;
             }
 
-            // 字符串值
+            // 解析字符串值
             if (value.StartsWith("\"") && value.EndsWith("\""))
             {
                 property.ValueType = PropertyValueType.String;
@@ -145,45 +367,53 @@ namespace DtsEditorLib.Parser
                 return property;
             }
 
-            // 引用值
-            if (value.StartsWith("<&") && value.EndsWith(">"))
+            // 解析引用
+            if (value.StartsWith("&"))
             {
-                property.ValueType = PropertyValueType.Reference;
-                property.Value = value.Substring(2, value.Length - 3);
+                property.ValueType = PropertyValueType.LabelReference;
+                property.Value = value.Substring(1);
                 return property;
             }
 
-            // 整数或整数数组
+            // 解析引用
+            if (value.StartsWith("<&") && value.EndsWith(">;"))
+            {
+                property.ValueType = PropertyValueType.ValueReference;
+                property.Value = value.Substring(2, value.Length - 4);
+                return property;
+            }
+
+            // 解析整数数组
             if (value.StartsWith("<") && value.EndsWith(">"))
             {
-                var intContent = value.Substring(1, value.Length - 2).Trim();
-                var intValues = intContent.Split(new[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries)
-                                        .Select(s => ParseInteger(s))
-                                        .ToArray();
+                var numbers = value.Substring(1, value.Length - 2)
+                    .Split(new[] { ' ', '\t', ',' }, StringSplitOptions.RemoveEmptyEntries)
+                    .Select(s => ParseInteger(s.Trim()))
+                    .ToArray();
 
-                if (intValues.Length == 1)
-                {
-                    property.ValueType = PropertyValueType.Integer;
-                    property.Value = intValues[0];
-                }
-                else
-                {
-                    property.ValueType = PropertyValueType.IntegerArray;
-                    property.Value = intValues;
-                }
+                property.ValueType = PropertyValueType.IntegerArray;
+                property.Value = numbers;
                 return property;
             }
 
-            // 字节数组
+            // 解析字节数组
             if (value.StartsWith("[") && value.EndsWith("]"))
             {
-                var byteContent = value.Substring(1, value.Length - 2).Trim();
-                var byteValues = byteContent.Split(new[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries)
-                                          .Select(s => Convert.ToByte(s, 16))
-                                          .ToArray();
+                var bytes = value.Substring(1, value.Length - 2)
+                    .Split(new[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries)
+                    .Select(s => Convert.ToByte(s.Trim(), 16))
+                    .ToArray();
 
                 property.ValueType = PropertyValueType.ByteArray;
-                property.Value = byteValues;
+                property.Value = bytes;
+                return property;
+            }
+
+            // 解析单个整数
+            if (int.TryParse(value, out int intValue) || value.StartsWith("0x"))
+            {
+                property.ValueType = PropertyValueType.Integer;
+                property.Value = ParseInteger(value);
                 return property;
             }
 
@@ -195,23 +425,22 @@ namespace DtsEditorLib.Parser
 
         private int ParseInteger(string value)
         {
-            if (value.StartsWith("0x") || value.StartsWith("0X"))
+            if (value.StartsWith("0x"))
                 return Convert.ToInt32(value, 16);
-            return Convert.ToInt32(value);
+            return int.Parse(value);
         }
 
-        private void MergeDeviceTrees(DeviceTreeDoc target, DeviceTreeDoc source)
+        private string RemoveComments(string line)
         {
-            // 简单合并逻辑，实际实现可能需要更复杂的合并策略
-            foreach (var include in source.Includes)
-            {
-                if (!target.Includes.Contains(include))
-                    target.Includes.Add(include);
-            }
+            var commentIndex = line.IndexOf("//");
+            if (commentIndex >= 0)
+                return line.Substring(0, commentIndex).Trim();
 
-            foreach (var label in source.Labels)
-            {
-                target.Labels[label.Key] = label.Value;
-            }
+            commentIndex = line.IndexOf("/*");
+            if (commentIndex >= 0)
+                return line.Substring(0, commentIndex).Trim();
+
+            return line;
         }
     }
+}

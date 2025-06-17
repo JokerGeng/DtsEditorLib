@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.Text;
 
 namespace DtsEditorLib.Models
 {
@@ -10,42 +8,53 @@ namespace DtsEditorLib.Models
     {
         public string Name { get; set; }
         public string Label { get; set; }
-        public uint? Address { get; set; }
-        public Dictionary<string, DeviceTreeProperty> Properties { get; set; } = new Dictionary<string, DeviceTreeProperty>();
-        public Dictionary<string, DeviceTreeNode> Children { get; set; } = new Dictionary<string, DeviceTreeNode>();
+        public uint? UnitAddress { get; set; }
+        public Dictionary<string, DeviceTreeProperty> Properties { get; set; }
+        public Dictionary<string, DeviceTreeNode> Children { get; set; }
         public DeviceTreeNode Parent { get; set; }
-        public List<string> Comments { get; set; } = new List<string>();
+        public int LineNumber { get; set; }
+        public List<string> Comments { get; set; }
+        public List<string> Labels { get; set; } = new List<string>();
 
-        // 完整路径
+        public DeviceTreeNode(string name)
+        {
+            Name = name;
+            Properties = new Dictionary<string, DeviceTreeProperty>();
+            Children = new Dictionary<string, DeviceTreeNode>();
+            Comments = new List<string>();
+        }
+
         public string FullPath
         {
             get
             {
                 if (Parent == null) return "/";
                 var path = Parent.FullPath;
-                if (path == "/") return $"/{Name}";
-                return $"{path}/{Name}";
+                return path == "/" ? $"/{Name}" : $"{path}/{Name}";
             }
         }
 
         // 添加属性
         public void AddProperty(string name, object value, PropertyValueType type = PropertyValueType.String)
         {
-            Properties[name] = new DeviceTreeProperty
+            Properties[name] = new DeviceTreeProperty(name)
             {
-                Name = name,
                 Value = value,
                 ValueType = type
             };
         }
 
-        // 添加子节点
-        public DeviceTreeNode AddChild(string name, uint? address = null, string label = null)
+        public void AddProperty(DeviceTreeProperty property)
         {
-            var child = new DeviceTreeNode
+            Properties[property.Name] = property;
+        }
+
+        // 添加子节点
+        public DeviceTreeNode AddChild(string name, uint? address, string label = null)
+        {
+            var child = new DeviceTreeNode(name)
             {
-                Name = name,
-                Address = address,
+                UnitAddress = address,
                 Label = label,
                 Parent = this
             };
@@ -53,18 +62,29 @@ namespace DtsEditorLib.Models
             return child;
         }
 
-        // 查找节点
-        public DeviceTreeNode FindNode(string path)
+
+        public void AddChild(DeviceTreeNode child)
         {
+            child.Parent = this;
+            Children[child.Name] = child;
+        }
+
+        public DeviceTreeNode FindChild(string path)
+        {
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                return null;
+            }
+
             if (path.StartsWith("/"))
             {
                 // 从根节点开始查找
                 var root = this;
                 while (root.Parent != null) root = root.Parent;
-                return root.FindNode(path.Substring(1));
+                return root.FindChild(path.Substring(1));
             }
 
-            var parts = path.Split('/');
+            var parts = path.Split('/', StringSplitOptions.RemoveEmptyEntries);
             var current = this;
 
             foreach (var part in parts)
@@ -76,27 +96,6 @@ namespace DtsEditorLib.Models
             }
 
             return current;
-        }
-
-        // 验证节点
-        public List<ValidationResult> Validate()
-        {
-            var results = new List<ValidationResult>();
-
-            // 检查必需属性
-            if (Name == "memory" && !Properties.ContainsKey("reg"))
-            {
-                results.Add(new ValidationResult(ValidationLevel.Error,
-                    $"Memory node '{FullPath}' must have 'reg' property"));
-            }
-
-            // 递归验证子节点
-            foreach (var child in Children.Values)
-            {
-                results.AddRange(child.Validate());
-            }
-
-            return results;
         }
     }
 }

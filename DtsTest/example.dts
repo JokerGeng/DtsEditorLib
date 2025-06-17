@@ -1,0 +1,135 @@
+﻿/dts-v1/;
+
+#include "skeleton.dtsi"
+#include "irq.h"
+
+/ {
+    model = "Example Board";
+    compatible = "example,board-v1";
+    
+    #address-cells = <2>;
+    #size-cells = <1>;
+    
+    chosen {
+        bootargs = "console=ttyS0,115200 root=/dev/mmcblk0p2 rw";
+        stdout-path = &uart0;
+    };
+    
+    memory@80000000 {
+        device_type = "memory";
+        reg = <0x0 0x80000000 0x40000000>; /* 1GB */
+    };
+    
+    cpus {
+        #address-cells = <1>;
+        #size-cells = <0>;
+        
+        cpu0: cpu@0 {
+            device_type = "cpu";
+            compatible = "arm,cortex-a53";
+            reg = <0>;
+            enable-method = "psci";
+            clocks = <&scpi_clk 0>;
+        };
+        
+        cpu@1 {
+            device_type = "cpu";
+            compatible = "arm,cortex-a53";
+            reg = <1>;
+            enable-method = "psci";
+            clocks = <&scpi_clk 0>;
+        };
+    };
+    
+    soc {
+        compatible = "simple-bus";
+        #address-cells = <2>;
+        #size-cells = <1>;
+        ranges;
+        
+        gic: interrupt-controller@1c001000 {
+            compatible = "arm,gic-400";
+            #interrupt-cells = <3>;
+            interrupt-controller;
+            reg = <0x0 0x1c001000 0x1000>,
+                  <0x0 0x1c002000 0x2000>;
+        };
+        
+        timer {
+            compatible = "arm,armv8-timer";
+            interrupts = <1 13 0xf08>,
+                        <1 14 0xf08>,
+                        <1 11 0xf08>,
+                        <1 10 0xf08>;
+        };
+        
+        uart0: serial@1c020000 {
+            compatible = "snps,dw-apb-uart";
+            reg = <0x0 0x1c020000 0x400>;
+            interrupts = <0 0 4>;
+            reg-shift = <2>;
+            reg-io-width = <4>;
+            clocks = <&osc24M>;
+            status = "okay";
+        };
+        
+        i2c0: i2c@1c022000 {
+            compatible = "allwinner,sun6i-a31-i2c";
+            reg = <0x0 0x1c022000 0x400>;
+            interrupts = <0 6 4>;
+            clocks = <&osc24M>;
+            status = "disabled";
+            #address-cells = <1>;
+            #size-cells = <0>;
+            
+            eeprom@50 {
+                compatible = "atmel,24c02";
+                reg = <0x50>;
+                pagesize = <8>;
+            };
+        };
+        
+        spi0: spi@1c023000 {
+            compatible = "allwinner,sun6i-a31-spi";
+            reg = <0x0 0x1c023000 0x1000>;
+            interrupts = <0 65 4>;
+            clocks = <&osc24M>;
+            status = "disabled";
+            #address-cells = <1>;
+            #size-cells = <0>;
+        };
+    };
+    
+    clocks {
+        osc24M: osc24M_clk {
+            #clock-cells = <0>;
+            compatible = "fixed-clock";
+            clock-frequency = <24000000>;
+            clock-output-names = "osc24M";
+        };
+        
+        scpi_clk: scpi_clocks@0 {
+            compatible = "arm,scpi-variable-clocks";
+            #clock-cells = <1>;
+            clock-indices = <0>;
+            clock-output-names = "cpu";
+        };
+    };
+    
+    leds {
+        compatible = "gpio-leds";
+        
+        status_led {
+            label = "status";
+            gpios = <&pio 7 24 0>; /* PH24 */
+            default-state = "on";
+        };
+        
+        user_led {
+            label = "user";
+            gpios = <&pio 7 25 0>; /* PH25 */
+            default-state = "off";
+            linux,default-trigger = "heartbeat";
+        };
+    };
+};

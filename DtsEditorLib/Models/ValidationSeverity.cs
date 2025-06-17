@@ -5,7 +5,7 @@ using System.Text;
 namespace DtsEditorLib.Models
 {
     // 验证结果
-    public enum ValidationLevel
+    public enum ValidationSeverity
     {
         Info,
         Warning,

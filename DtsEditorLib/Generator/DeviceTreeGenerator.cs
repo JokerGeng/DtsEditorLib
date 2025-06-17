@@ -9,109 +9,170 @@ namespace DtsEditorLib.Generator
 {
     public class DeviceTreeGenerator
     {
-        private readonly StringBuilder _output;
-        private int _indentLevel;
-        private const string INDENT = "\t";
+        private int indentLevel = 0;
+        private const string IndentString = "\t";
 
-        public DeviceTreeGenerator()
+        public string Generate(DeviceTree deviceTree)
         {
-            _output = new StringBuilder();
-            _indentLevel = 0;
-        }
+            var sb = new StringBuilder();
 
-        public string GenerateDeviceTree(DeviceTreeDoc deviceTree)
-        {
-            _output.Clear();
-            _indentLevel = 0;
+            // 添加文件头注释
+            if (deviceTree.Comments.Any())
+            {
+                foreach (var comment in deviceTree.Comments)
+                {
+                    sb.AppendLine($"/* {comment} */");
+                }
+                sb.AppendLine();
+            }
 
             // 生成版本声明
-            _output.AppendLine(deviceTree.Version);
-            _output.AppendLine();
+            sb.AppendLine(deviceTree.Version);
+            sb.AppendLine();
 
             // 生成包含文件
             foreach (var include in deviceTree.Includes)
             {
-                _output.AppendLine($"#include \"{include}\"");
+                sb.AppendLine($"#include \"{include}\"");
             }
+
             if (deviceTree.Includes.Any())
-            {
-                _output.AppendLine();
-            }
+                sb.AppendLine();
 
             // 生成根节点
-            GenerateNode(deviceTree.Root, isRoot: true);
+            GenerateNode(sb, deviceTree.Root, true);
 
-            return _output.ToString();
+            return sb.ToString();
         }
 
-        private void GenerateNode(DeviceTreeNode node, bool isRoot = false)
+        public void GenerateToFile(DeviceTree deviceTree, string filePath)
         {
+            var content = Generate(deviceTree);
+            File.WriteAllText(filePath, content);
+        }
+
+        private void GenerateNode(StringBuilder sb, DeviceTreeNode node, bool isRoot = false)
+        {
+            if (isRoot)
+            {
+                sb.AppendLine("/{");
+                indentLevel++;
+            }
+
             if (!isRoot)
             {
-                WriteIndent();
-
-                // 写入标签（如果有）
+                // 添加节点标签
+                var indent = GetIndent();
                 if (!string.IsNullOrEmpty(node.Label))
                 {
-                    _output.Append($"{node.Label}: ");
+                    sb.Append($"{indent}{node.Label}: ");
                 }
-
-                // 写入节点名和地址
-                _output.Append(node.Name);
-                if (node.Address.HasValue)
+                else
                 {
-                    _output.Append($"@{node.Address.Value:x}");
+                    sb.Append(indent);
                 }
 
-                _output.AppendLine(" {");
-                _indentLevel++;
+                // 添加节点名称和单元地址
+                sb.Append(node.Name);
+                if(node.UnitAddress.HasValue)
+                {
+                    sb.Append($"@{node.UnitAddress.Value:x}");
+                }
+                sb.AppendLine(" {");
+                indentLevel++;
             }
 
             // 生成属性
             foreach (var property in node.Properties.Values.OrderBy(p => p.Name))
             {
-                WriteIndent();
-                _output.AppendLine(property.ToString());
+                GenerateProperty(sb, property);
             }
 
-            // 在属性和子节点之间添加空行
+            // 添加子节点之间的空行
             if (node.Properties.Any() && node.Children.Any())
             {
-                _output.AppendLine();
+                sb.AppendLine();
             }
 
             // 生成子节点
-            foreach (var child in node.Children.Values.OrderBy(c => c.Name))
+            var childNodes = node.Children.Values.ToList();//.OrderBy(n => n.Name).ToList();
+            for (int i = 0; i < childNodes.Count; i++)
             {
-                GenerateNode(child);
-            }
+                GenerateNode(sb, childNodes[i]);
 
-            if (!isRoot)
-            {
-                _indentLevel--;
-                WriteIndent();
-                _output.AppendLine("};");
-
-                // 在同级节点之间添加空行
-                if (_indentLevel > 0)
+                // 在子节点之间添加空行
+                if (i < childNodes.Count - 1)
                 {
-                    _output.AppendLine();
+                    sb.AppendLine();
                 }
             }
-        }
 
-        private void WriteIndent()
-        {
-            for (int i = 0; i < _indentLevel; i++)
+            //if (!isRoot)
             {
-                _output.Append(INDENT);
+                indentLevel--;
+                sb.AppendLine($"{GetIndent()}}}");
             }
         }
 
-        public void SaveToFile(DeviceTreeDoc deviceTree, string filePath)
+        private void GenerateProperty(StringBuilder sb, DeviceTreeProperty property)
         {
-            var content = GenerateDeviceTree(deviceTree);
-            File.WriteAllText(filePath, content);
+            var indent = GetIndent();
+            sb.Append($"{indent}{property.Name}");
+
+            if (property.ValueType == PropertyValueType.Empty)
+            {
+                sb.AppendLine(";");
+                return;
+            }
+
+            sb.Append(" = ");
+
+            switch (property.ValueType)
+            {
+                case PropertyValueType.String:
+                    sb.Append($"{property.Value}");
+                    break;
+
+                case PropertyValueType.Integer:
+                    sb.Append($"<{property.Value}>");
+                    break;
+
+                case PropertyValueType.IntegerArray:
+                    var intArray = property.GetIntegerArray();
+                    sb.Append($"<{string.Join(" ", intArray)}>");
+                    break;
+
+                case PropertyValueType.ByteArray:
+                    var byteArray = property.GetByteArray();
+                    var hexValues = byteArray.Select(b => b.ToString("X2"));
+                    sb.Append($"[{string.Join(" ", hexValues)}]");
+                    break;
+
+                case PropertyValueType.LabelReference:
+                    sb.Append($"&{property.Value}");
+                    break;
+
+                case PropertyValueType.ValueReference:
+                    sb.Append($"<");
+                    sb.Append($"&{property.Value}");
+                    sb.Append($">");
+                    break;
+
+                case PropertyValueType.Boolean:
+                    // 布尔属性通常没有值
+                    break;
+
+                default:
+                    sb.Append(property.RawValue ?? property.Value?.ToString());
+                    break;
+            }
+
+            sb.AppendLine();
+        }
+
+        private string GetIndent()
+        {
+            return new string('\t', indentLevel);
         }
     }
 }

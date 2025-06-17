@@ -5,5 +5,5 @@
 /.vs
 /DtsEditorLib/bin/*
 /DtsEditorLib/obj/*
-/DtsEditorLib/obj/Debug/netcoreapp3.1/DtsEditorLib.AssemblyInfo.cs
-/DtsEditorLib/obj/Debug/netcoreapp3.1/DtsEditorLib.AssemblyInfoInputs.cache
+/DtsTest/bin/
+/DtsTest/obj

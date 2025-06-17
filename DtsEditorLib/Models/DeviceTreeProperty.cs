@@ -13,6 +13,14 @@ namespace DtsEditorLib.Models
         public object Value { get; set; }
         public string RawValue { get; set; }
         public List<string> Comments { get; set; } = new List<string>();
+        public int LineNumber { get; set; }
+        public string Label { get; set; }
+
+        public DeviceTreeProperty(string name)
+        {
+            Name = name;
+            ValueType = PropertyValueType.Empty;
+        }
 
         public T GetValue<T>()
         {
@@ -21,6 +29,10 @@ namespace DtsEditorLib.Models
 
             return (T)Convert.ChangeType(Value, typeof(T));
         }
+
+        public string[] GetStringArray() => Value as string[];
+        public int[] GetIntegerArray() => Value as int[];
+        public byte[] GetByteArray() => Value as byte[];
 
         public override string ToString()
         {
@@ -38,7 +50,9 @@ namespace DtsEditorLib.Models
                 case PropertyValueType.ByteArray:
                     var byteArray = (byte[])Value;
                     return $"{Name} = [{string.Join(" ", byteArray.Select(b => $"{b:X2}"))}];";
-                case PropertyValueType.Reference:
+                case PropertyValueType.LabelReference:
+                    return $"{Name} = &{Value};";
+                case PropertyValueType.ValueReference:
                     return $"{Name} = <&{Value}>;";
                 default:
                     return $"{Name} = {RawValue};";
