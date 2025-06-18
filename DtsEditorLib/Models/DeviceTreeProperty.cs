@@ -34,6 +34,8 @@ namespace DtsEditorLib.Models
         public int[] GetIntegerArray() => Value as int[];
         public byte[] GetByteArray() => Value as byte[];
 
+        public List<int[]> GetListArray() => Value as List<int[]>;
+
         public override string ToString()
         {
             switch (ValueType)

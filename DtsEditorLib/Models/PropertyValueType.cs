@@ -10,6 +10,7 @@ namespace DtsEditorLib.Models
         String,
         Integer,
         IntegerArray,
+        MultiIntegerArray,
         ByteArray,
         Boolean,
         LabelReference,//&uart0

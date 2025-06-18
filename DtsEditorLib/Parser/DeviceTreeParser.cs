@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -171,6 +170,7 @@ namespace DtsEditorLib.Parser
                 var property = ParseProperty(propertyMatch.Groups[1].Value,
                                            propertyMatch.Groups[3].Value,
                                            line.LineNumber);
+                MultiLineProperty(context, property);
                 currentNode.AddProperty(property);
                 context.CurrentIndex++;
                 ParseNodeContent(currentNode, context); // 递归继续处理
@@ -184,6 +184,7 @@ namespace DtsEditorLib.Parser
                 var property = ParseProperty(sharpPropertyMatch.Groups[1].Value,
                                              sharpPropertyMatch.Groups[2].Value,
                                              line.LineNumber);
+                MultiLineProperty(context, property);
                 currentNode.AddProperty(property);
                 context.CurrentIndex++;
                 ParseNodeContent(currentNode, context); // 递归继续处理
@@ -345,6 +346,29 @@ namespace DtsEditorLib.Parser
             return deviceTree;
         }
 
+
+        private void MultiLineProperty(ParseContext context, DeviceTreeProperty property)
+        {
+            int count = context.CurrentIndex + 1;
+            var line = context.Lines[count];
+            var contentLine = line.Content;
+            var values = new List<string>();
+            while (contentLine.StartsWith("<") && (contentLine.EndsWith(">,") || contentLine.EndsWith(">;")))
+            {
+                var numbers = contentLine.Substring(1, contentLine.Length - 3)
+                  .Split(new[] { ' ', '\t', ',' }, StringSplitOptions.RemoveEmptyEntries)
+                  .Select(s => ParseInteger(s.Trim()))
+                  .ToArray();
+                if (property.Value is List<int[]>)
+                {
+                    ((List<int[]>)property.Value).Add(numbers);
+                }
+                count++;
+                contentLine = context.Lines[count].Content;
+            }
+            context.CurrentIndex = count - 1;
+        }
+
         private DeviceTreeProperty ParseProperty(string name, string value, int lineNumber)
         {
             var property = new DeviceTreeProperty(name)
@@ -393,6 +417,19 @@ namespace DtsEditorLib.Parser
 
                 property.ValueType = PropertyValueType.IntegerArray;
                 property.Value = numbers;
+                return property;
+            }
+
+            //解析整数数组
+            if (value.StartsWith("<") && value.EndsWith(">,"))
+            {
+                var numbers = value.Substring(1, value.Length - 3)
+                    .Split(new[] { ' ', '\t', ',' }, StringSplitOptions.RemoveEmptyEntries)
+                    .Select(s => ParseInteger(s.Trim()))
+                    .ToArray();
+
+                property.ValueType = PropertyValueType.MultiIntegerArray;
+                property.Value = new List<int[]>() { numbers };
                 return property;
             }
 

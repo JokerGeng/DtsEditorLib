@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
+﻿using System.IO;
 using System.Linq;
 using System.Text;
 using DtsEditorLib.Models;
@@ -62,7 +60,7 @@ namespace DtsEditorLib.Generator
             if (!isRoot)
             {
                 // 添加节点标签
-                var indent = GetIndent();
+                var indent = GetIndent(indentLevel);
                 if (!string.IsNullOrEmpty(node.Label))
                 {
                     sb.Append($"{indent}{node.Label}: ");
@@ -74,7 +72,7 @@ namespace DtsEditorLib.Generator
 
                 // 添加节点名称和单元地址
                 sb.Append(node.Name);
-                if(node.UnitAddress.HasValue)
+                if (node.UnitAddress.HasValue)
                 {
                     sb.Append($"@{node.UnitAddress.Value:x}");
                 }
@@ -110,13 +108,13 @@ namespace DtsEditorLib.Generator
             //if (!isRoot)
             {
                 indentLevel--;
-                sb.AppendLine($"{GetIndent()}}};");
+                sb.AppendLine($"{GetIndent(indentLevel)}}};");
             }
         }
 
         private void GenerateProperty(StringBuilder sb, DeviceTreeProperty property)
         {
-            var indent = GetIndent();
+            var indent = GetIndent(indentLevel);
             sb.Append($"{indent}{property.Name}");
 
             if (property.ValueType == PropertyValueType.Empty)
@@ -140,6 +138,23 @@ namespace DtsEditorLib.Generator
                 case PropertyValueType.IntegerArray:
                     var intArray = property.GetIntegerArray();
                     sb.Append($"<{string.Join(" ", intArray)}>;");
+                    break;
+
+                case PropertyValueType.MultiIntegerArray:
+                    var listArray = property.GetListArray();
+                    sb.AppendLine($"<{string.Join(" ", listArray[0].Select(b => "0x" + b.ToString("x2")))}>,");
+                    for (int i = 1; i < listArray.Count; i++)
+                    {
+                        var listValues = listArray[i].Select(b => "0x" + b.ToString("x2"));
+                        if (i == listArray.Count - 1)
+                        {
+                            sb.AppendLine($"{indent}{indent}<{string.Join(" ", listValues)}>;");
+                        }
+                        else
+                        {
+                            sb.AppendLine($"{indent}{indent}<{string.Join(" ", listValues)}>,");
+                        }
+                    }
                     break;
 
                 case PropertyValueType.ByteArray:
@@ -168,9 +183,9 @@ namespace DtsEditorLib.Generator
             sb.AppendLine();
         }
 
-        private string GetIndent()
+        private string GetIndent(int count)
         {
-            return new string('\t', indentLevel);
+            return new string('\t', count);
         }
     }
 }
