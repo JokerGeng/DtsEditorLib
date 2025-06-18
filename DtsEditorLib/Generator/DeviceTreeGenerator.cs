@@ -110,7 +110,7 @@ namespace DtsEditorLib.Generator
             //if (!isRoot)
             {
                 indentLevel--;
-                sb.AppendLine($"{GetIndent()}}}");
+                sb.AppendLine($"{GetIndent()}}};");
             }
         }
 
@@ -153,7 +153,7 @@ namespace DtsEditorLib.Generator
                     break;
 
                 case PropertyValueType.ValueReference:
-                    sb.Append($"<&{property.Value}>");
+                    sb.Append($"<&{property.Value}>;");
                     break;
 
                 case PropertyValueType.Boolean:

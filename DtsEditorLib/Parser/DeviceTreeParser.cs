@@ -11,7 +11,7 @@ namespace DtsEditorLib.Parser
 {
     public class DeviceTreeParser
     {
-        private static readonly Regex NodeRegex = new Regex(@"^(\w+:)?\s*(\w+)(@[\w,]+)?\s*\{?$");
+        private static readonly Regex NodeRegex = new Regex(@"^\s*(?:(\w+)\s*:\s*)?([\w\-]+)(@[0-9a-fA-F,]+)?\s*\{?\s*$");
         private static readonly Regex PropertyRegex = new Regex(@"^(\w+[-\w]*)\s*(=\s*(.+))?\s*;?$");
         private static readonly Regex IncludeRegex = new Regex(@"#include\s+[""<]([^"">]+)["">\s*]");
         private static readonly Regex LabelRegex = new Regex(@"^(\w+):\s*(.+)$");
@@ -371,7 +371,7 @@ namespace DtsEditorLib.Parser
             if (value.StartsWith("&"))
             {
                 property.ValueType = PropertyValueType.LabelReference;
-                property.Value = value.Substring(1);
+                property.Value = value.Substring(1, value.Length - 2);
                 return property;
             }
 
