@@ -24,7 +24,7 @@ namespace DtsTest
             Console.WriteLine("\n=== 生成DTS文件 ===");
             var generator = new DeviceTreeGenerator();
             var generatedContent0 = generator.Generate(deviceTree);
-            File.WriteAllText("generate.dts", generatedContent0);
+            File.WriteAllText("generate_parse.dts", generatedContent0);
 
             // 示例2: 编辑设备树
             Console.WriteLine("\n=== 编辑设备树 ===");
@@ -43,9 +43,6 @@ namespace DtsTest
                 e.AddProperty("/my-device", "interrupts", new int[] { 0, 42, 4 }, PropertyValueType.IntegerArray);
             });
 
-            Console.WriteLine("添加了新的设备节点");
-            var generatedContent1 = generator.Generate(deviceTree);
-            File.WriteAllText("generate_edit.dts", generatedContent1);
 
             editor.AddProperty("/soc/i2c/eeprom", "eepromtest", "eepromtest");
             editor.AddProperty("/clocks/scpi_clocks", "scpi_clktest", "scpi_clktest");
@@ -86,17 +83,6 @@ namespace DtsTest
                 Console.WriteLine($"找到GIC节点: {gicNode.FullPath}");
             }
 
-            // 示例6: 高级编辑操作
-            Console.WriteLine("\n=== 高级编辑操作 ===");
-
-            // 复制节点
-            //var copiedNode = editor.CopyNode("/my-device", "/", "my-device-copy@2000000");
-            //if (copiedNode != null)
-            //{
-            //    editor.UpdateProperty("/my-device-copy", "reg", new int[] { 0x2000000, 0x1000 });
-            //    Console.WriteLine("复制并修改了设备节点");
-            //};
-
             // 最终验证
             Console.WriteLine("\n=== 最终验证 ===");
             var finalResults = validator.Validate(deviceTree);
@@ -107,6 +93,5 @@ namespace DtsTest
             Console.WriteLine("已生成最终的 final_output.dts 文件");
             Console.ReadLine();
         }
-
     }
 }

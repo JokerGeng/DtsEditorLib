@@ -74,12 +74,19 @@ namespace DtsEditorLib.Models
                 }
             }
             return null;
-            //return null;
         }
 
         public DeviceTreeNode FindByLabel(string label)
         {
-            return Labels.ContainsKey(label) ? Labels[label] : null;
+            var nodes = GetAllNodes();
+            foreach (var node in nodes)
+            {
+                if(node.Label==label)
+                {
+                    return node;
+                }
+            }
+            return null;
         }
 
         // 获取所有节点
