@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
 
 namespace DtsEditorLib.Models
 {
@@ -45,9 +44,37 @@ namespace DtsEditorLib.Models
             node.Label = label;
         }
 
+        /// <summary>
+        /// 根节点开始/A/B/C
+        /// </summary>
+        /// <param name="path"></param>
+        /// <returns></returns>
         public DeviceTreeNode FindByPath(string path)
         {
-            return Root.FindChild(path);
+            if (path == "/")
+            {
+                return Root;
+            }
+            return FindChild(Root, path);
+        }
+
+        public DeviceTreeNode FindChild(DeviceTreeNode currNode, string path)
+        {
+            if (currNode.Name == path)
+            {
+                return currNode;
+            }
+            var newPath = path.TrimStart(currNode.Name.ToCharArray());
+            newPath = newPath.TrimStart('/');
+            foreach (var child in currNode.Children)
+            {
+                if (newPath.StartsWith(child.Name))
+                {
+                    return FindChild(child, newPath);
+                }
+            }
+            return null;
+            //return null;
         }
 
         public DeviceTreeNode FindByLabel(string label)

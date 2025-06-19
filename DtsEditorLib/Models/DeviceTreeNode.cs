@@ -1,6 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Reflection.Metadata.Ecma335;
+﻿using System.Collections.Generic;
+using System.Linq;
 
 namespace DtsEditorLib.Models
 {
@@ -36,7 +35,7 @@ namespace DtsEditorLib.Models
         }
 
         // 添加属性
-        public void AddProperty(string name, object value, PropertyValueType type = PropertyValueType.String)
+        internal void AddProperty(string name, object value, PropertyValueType type = PropertyValueType.String)
         {
             Properties.Add(new DeviceTreeProperty(name)
             {
@@ -45,13 +44,13 @@ namespace DtsEditorLib.Models
             });
         }
 
-        public void AddProperty(DeviceTreeProperty property)
+        internal void AddProperty(DeviceTreeProperty property)
         {
             Properties.Add(property);
         }
 
         // 添加子节点
-        public DeviceTreeNode AddChild(string name, uint? address, string label = null)
+        internal DeviceTreeNode AddChild(string name, uint? address, string label = null)
         {
             var child = new DeviceTreeNode(name)
             {
@@ -59,47 +58,15 @@ namespace DtsEditorLib.Models
                 Label = label,
                 Parent = this
             };
-            Children.Add(child);    
+            Children.Add(child);
             return child;
         }
 
 
-        public void AddChild(DeviceTreeNode child)
+        internal void AddChild(DeviceTreeNode child)
         {
             child.Parent = this;
             Children.Add(child);
-        }
-
-        public DeviceTreeNode FindChild(string path)
-        {
-            if (string.IsNullOrWhiteSpace(path))
-            {
-                return null;
-            }
-
-            if (path.StartsWith("/"))
-            {
-                // 从根节点开始查找
-                var root = this;
-                while (root.Parent != null) root = root.Parent;
-                return root.FindChild(path.Substring(1));
-            }
-
-            var parts = path.Split('/', StringSplitOptions.RemoveEmptyEntries);
-            var current = this;
-
-            foreach (var part in parts)
-            {
-                if (string.IsNullOrEmpty(part)) continue;
-                var find= current.Children.Find(n=>n.Name==part);
-                if(find==null)
-                {
-                    return null ;
-                }
-                current= find;
-            }
-
-            return current;
         }
     }
 }

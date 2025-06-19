@@ -15,7 +15,7 @@ namespace DtsEditorLib.Editor
         }
 
         // 添加节点
-        public DeviceTreeNode AddNode(string parentPath, string nodeName, uint unitAddress)
+        public DeviceTreeNode AddNode(string parentPath, string nodeName, uint? unitAddress)
         {
             var parent = deviceTree.FindByPath(parentPath);
             if (parent == null)
@@ -62,6 +62,10 @@ namespace DtsEditorLib.Editor
                 Value = value,
                 ValueType = valueType
             };
+            if(valueType == PropertyValueType.String)
+            {
+                property.Value = $"\"{value}\";";
+            }
 
             node.AddProperty(property);
         }
@@ -77,6 +81,10 @@ namespace DtsEditorLib.Editor
             }
 
             find.Value = newValue;
+            if (find.ValueType == PropertyValueType.String)
+            {
+                find.Value = $"\"{newValue}\";";
+            }
             return true;
         }
 
@@ -182,13 +190,6 @@ namespace DtsEditorLib.Editor
         }
 
         // 查找和替换
-        public int FindAndReplaceProperty(string propertyName, object oldValue, object newValue)
-        {
-            int count = 0;
-            FindAndReplaceInNode(deviceTree.Root, propertyName, oldValue, newValue, ref count);
-            return count;
-        }
-
         private void FindAndReplaceInNode(DeviceTreeNode node, string propertyName, object oldValue, object newValue, ref int count)
         {
             var find = node.Properties.Find(p => p.Name == propertyName);
