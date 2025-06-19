@@ -11,10 +11,11 @@ namespace DtsEditorLib.Parser
     public class DeviceTreeParser
     {
         private static readonly Regex NodeRegex = new Regex(@"^\s*(?:(\w+)\s*:\s*)?([\w\-]+)(@[0-9a-fA-F,]+)?\s*\{?\s*$");
-        private static readonly Regex PropertyRegex = new Regex(@"^(\w+[-\w]*)\s*(=\s*(.+))?\s*;?$");
+        //除多行值之外,基本将属性值作为string类型处理,后续优化
+        private static readonly Regex PropertyRegex = new Regex(@"^(#?\w+[-?,?\w]*)\s*(=\s*(.+))?\s*;?$");
         private static readonly Regex IncludeRegex = new Regex(@"#include\s+[""<]([^"">]+)["">\s*]");
         private static readonly Regex LabelRegex = new Regex(@"^(\w+):\s*(.+)$");
-        private static readonly Regex SharpPropertyRegex = new Regex(@"^\s*(#\w[\w\-]*)\s*=\s*(<[^>]*>)[\s;]*");
+        //private static readonly Regex SharpPropertyRegex = new Regex(@"^\s*(#\w[\w\-]*)\s*=\s*(<[^>]*>)[\s;]*");
 
         public DeviceTree ParseFile(string filePath)
         {
@@ -170,20 +171,6 @@ namespace DtsEditorLib.Parser
                 var property = ParseProperty(propertyMatch.Groups[1].Value,
                                            propertyMatch.Groups[3].Value,
                                            line.LineNumber);
-                MultiLineProperty(context, property);
-                currentNode.AddProperty(property);
-                context.CurrentIndex++;
-                ParseNodeContent(currentNode, context); // 递归继续处理
-                return;
-            }
-
-            //#开始属性
-            var sharpPropertyMatch = SharpPropertyRegex.Match(contentLine);
-            if (sharpPropertyMatch.Success)
-            {
-                var property = ParseProperty(sharpPropertyMatch.Groups[1].Value,
-                                             sharpPropertyMatch.Groups[2].Value,
-                                             line.LineNumber);
                 MultiLineProperty(context, property);
                 currentNode.AddProperty(property);
                 context.CurrentIndex++;
