@@ -20,342 +20,572 @@ namespace DtsParser
             _position = 0;
         }
 
-        /// <summary>
-        /// 解析DTS文件，返回根节点
+        // <summary>
+        /// 解析属性值 - 改进版，支持复杂表达式
         /// </summary>
-        public DtsNode Parse()
+        private DtsPropertyValue ParsePropertyValue()
         {
-            var root = new DtsNode("/", null);
-
-            while (!IsAtEnd())
-            {
-                if (Check(TokenType.Newline))
-                {
-                    Advance();
-                    continue;
-                }
-
-                // 处理预处理指令
-                if (Check(TokenType.Include))
-                {
-                    ParseIncludeDirective();
-                    continue;
-                }
-
-                // 解析节点或属性
-                var item = ParseTopLevelItem();
-                if (item is DtsNode node)
-                {
-                    root.AddChild(node);
-                }
-                else if (item is DtsProperty property)
-                {
-                    root.AddProperty(property);
-                }
-            }
-
-            return root;
-        }
-
-        /// <summary>
-        /// 解析顶层项目（节点或属性）
-        /// </summary>
-        private object ParseTopLevelItem()
-        {
-            // 检查是否有标签
-            string label = null;
-            if (Check(TokenType.Identifier) && CheckNext(TokenType.Identifier) && Peek().Value == ":")
-            {
-                label = Advance().Value;
-                Consume(TokenType.Identifier, "Expected ':' after label");
-            }
-
-            if (Check(TokenType.Identifier))
-            {
-                var name = Advance().Value;
-
-                // 如果下一个token是'{'，这是一个节点
-                if (Check(TokenType.LeftBrace))
-                {
-                    return ParseNode(name, label);
-                }
-                // 如果下一个token是'='或';'，这是一个属性
-                else if (Check(TokenType.Equals) || Check(TokenType.Semicolon))
-                {
-                    return ParseProperty(name);
-                }
-            }
-
-            throw new ParseException($"Unexpected token: {Current()}", Current().Line);
-        }
-
-        /// <summary>
-        /// 解析节点
-        /// </summary>
-        private DtsNode ParseNode(string name, string label = null)
-        {
-            var node = new DtsNode(name, label)
-            {
-                Line = Previous().Line
-            };
-
-            Consume(TokenType.LeftBrace, "Expected '{' after node name");
-
-            // 解析节点内容
-            while (!Check(TokenType.RightBrace) && !IsAtEnd())
-            {
-                if (Check(TokenType.Newline))
-                {
-                    Advance();
-                    continue;
-                }
-
-                // 检查是否有标签
-                string childLabel = null;
-                if (Check(TokenType.Identifier) && CheckNext(TokenType.Identifier) && PeekNext().Value == ":")
-                {
-                    childLabel = Advance().Value;
-                    Consume(TokenType.Identifier, "Expected ':' after label");
-                }
-
-                if (Check(TokenType.Identifier))
-                {
-                    var itemName = Advance().Value;
-
-                    if (Check(TokenType.LeftBrace))
-                    {
-                        // 子节点
-                        var childNode = ParseNode(itemName, childLabel);
-                        node.AddChild(childNode);
-                    }
-                    else if (Check(TokenType.Equals) || Check(TokenType.Semicolon))
-                    {
-                        // 属性
-                        var property = ParseProperty(itemName);
-                        node.AddProperty(property);
-                    }
-                    else
-                    {
-                        throw new ParseException($"Unexpected token after identifier: {Current()}", Current().Line);
-                    }
-                }
-                else
-                {
-                    throw new ParseException($"Expected identifier in node body: {Current()}", Current().Line);
-                }
-            }
-
-            Consume(TokenType.RightBrace, "Expected '}' after node body");
-
-            // 节点定义后可能有分号
-            if (Check(TokenType.Semicolon))
-            {
-                Advance();
-            }
-
-            return node;
-        }
-
-        /// <summary>
-        /// 解析属性
-        /// </summary>
-        private DtsProperty ParseProperty(string name)
-        {
-            var line = Previous().Line;
-            DtsValue value = null;
-
-            if (Check(TokenType.Equals))
-            {
-                Advance(); // consume '='
-                value = ParseValue();
-            }
-
-            Consume(TokenType.Semicolon, "Expected ';' after property");
-            return new DtsProperty(name, value, line);
-        }
-
-        /// <summary>
-        /// 解析属性值
-        /// </summary>
-        private DtsValue ParseValue()
-        {
-            // 字符串值
             if (Check(TokenType.String))
             {
-                return new DtsStringValue(Advance().Value);
-            }
-
-            // 数字值
-            if (Check(TokenType.Number))
-            {
-                var token = Advance();
-                return new DtsNumberValue(long.Parse(token.Value));
-            }
-
-            // 十六进制数字值
-            if (Check(TokenType.HexNumber))
-            {
-                var token = Advance();
-                var hexValue = token.Value.Substring(2); // 去掉 "0x" 前缀
-                return new DtsNumberValue(Convert.ToInt64(hexValue, 16), true);
-            }
-
-            // 引用值
-            if (Check(TokenType.Ampersand))
-            {
-                Advance(); // consume '&'
-                var reference = Consume(TokenType.Identifier, "Expected identifier after '&'").Value;
-                return new DtsReferenceValue(reference);
-            }
-
-            // 数组值
-            if (Check(TokenType.LeftAngle))
-            {
-                return ParseArrayValue();
-            }
-
-            // 标识符（可能是引用或枚举值）
-            if (Check(TokenType.Identifier))
-            {
-                return new DtsStringValue(Advance().Value);
-            }
-
-            throw new ParseException($"Unexpected token in value: {Current()}", Current().Line);
-        }
-
-        /// <summary>
-        /// 解析数组值
-        /// </summary>
-        private DtsArrayValue ParseArrayValue()
-        {
-            var array = new DtsArrayValue();
-
-            Consume(TokenType.LeftAngle, "Expected '<'");
-
-            while (!Check(TokenType.RightAngle) && !IsAtEnd())
-            {
-                array.Values.Add(ParseValue());
-
-                if (Check(TokenType.Comma))
-                {
-                    Advance();
-                }
-                else if (!Check(TokenType.RightAngle))
-                {
-                    break;
-                }
-            }
-
-            Consume(TokenType.RightAngle, "Expected '>' after array values");
-            return array;
-        }
-
-        /// <summary>
-        /// 解析include指令
-        /// </summary>
-        private void ParseIncludeDirective()
-        {
-            Consume(TokenType.Include, "Expected #include");
-
-            if (Check(TokenType.String))
-            {
-                var includePath = Advance().Value;
-                // 这里可以实现include文件的处理逻辑
-                Console.WriteLine($"Include directive: {includePath}");
+                var stringValue = Advance().Value;
+                return new DtsPropertyValue(DtsPropertyValueType.String, stringValue);
             }
             else if (Check(TokenType.LeftAngle))
             {
-                Advance(); // consume '<'
-                var includePath = Consume(TokenType.Identifier, "Expected include path").Value;
-                Consume(TokenType.RightAngle, "Expected '>' after include path");
-                Console.WriteLine($"Include directive: <{includePath}>");
+                return ParseArrayValue();
+            }
+            else if (Check(TokenType.Ampersand))
+            {
+                return ParseReference();
+            }
+            else
+            {
+                // 解析单个表达式
+                var expr = ParseExpression();
+                return new DtsPropertyValue(DtsPropertyValueType.Expression, expr);
             }
         }
 
-        #region 辅助方法
+        private DtsPropertyValue ParseArrayValue()
+        {
+            Consume(TokenType.LeftAngle, "Expected '<'");
+
+            var values = new List<DtsPropertyValue>();
+
+            // Skip newlines at the beginning
+            SkipNewlines();
+
+            while (!Check(TokenType.RightAngle) && !IsAtEnd())
+            {
+                // Skip newlines between values
+                SkipNewlines();
+
+                if (Check(TokenType.RightAngle))
+                    break;
+
+                var expr = ParseExpression();
+                values.Add(new DtsPropertyValue(DtsPropertyValueType.Expression, expr));
+
+                // Skip trailing newlines and whitespace
+                SkipNewlines();
+
+                // Check if we have more values (no comma needed in DTS arrays)
+                if (Check(TokenType.RightAngle))
+                    break;
+            }
+
+            Consume(TokenType.RightAngle, "Expected '>'");
+            return new DtsPropertyValue(DtsPropertyValueType.Array, values);
+        }
 
         /// <summary>
-        /// 检查当前token是否为指定类型
+        /// 解析表达式（支持复杂的位运算和函数调用）
         /// </summary>
+        private DtsExpression ParseExpression()
+        {
+            return ParseLogicalOr();
+        }
+
+        /// <summary>
+        /// 解析逻辑或表达式 (||)
+        /// </summary>
+        private DtsExpression ParseLogicalOr()
+        {
+            var expr = ParseLogicalAnd();
+
+            while (Match(TokenType.LogicalOr))
+            {
+                var op = Previous().Value;
+                var right = ParseLogicalAnd();
+                expr = new DtsBinaryExpression(expr, op, right);
+            }
+
+            return expr;
+        }
+
+        /// <summary>
+        /// 解析逻辑与表达式 (&&)
+        /// </summary>
+        private DtsExpression ParseLogicalAnd()
+        {
+            var expr = ParseBitwiseOr();
+
+            while (Match(TokenType.LogicalAnd))
+            {
+                var op = Previous().Value;
+                var right = ParseBitwiseOr();
+                expr = new DtsBinaryExpression(expr, op, right);
+            }
+
+            return expr;
+        }
+
+        /// <summary>
+        /// 解析位或表达式 (|)
+        /// </summary>
+        private DtsExpression ParseBitwiseOr()
+        {
+            var expr = ParseBitwiseXor();
+
+            while (Match(TokenType.Pipe))
+            {
+                var op = Previous().Value;
+                var right = ParseBitwiseXor();
+                expr = new DtsBinaryExpression(expr, op, right);
+            }
+
+            return expr;
+        }
+
+        /// <summary>
+        /// 解析位异或表达式 (^)
+        /// </summary>
+        private DtsExpression ParseBitwiseXor()
+        {
+            var expr = ParseBitwiseAnd();
+
+            while (Match(TokenType.Caret))
+            {
+                var op = Previous().Value;
+                var right = ParseBitwiseAnd();
+                expr = new DtsBinaryExpression(expr, op, right);
+            }
+
+            return expr;
+        }
+
+        /// <summary>
+        /// 解析位与表达式 (&)
+        /// </summary>
+        private DtsExpression ParseBitwiseAnd()
+        {
+            var expr = ParseShift();
+
+            while (Match(TokenType.Ampersand))
+            {
+                var op = Previous().Value;
+                var right = ParseShift();
+                expr = new DtsBinaryExpression(expr, op, right);
+            }
+
+            return expr;
+        }
+
+        /// <summary>
+        /// 解析位移表达式 (<< >>)
+        /// </summary>
+        private DtsExpression ParseShift()
+        {
+            var expr = ParseAddition();
+
+            while (Match(TokenType.LeftShift, TokenType.RightShift))
+            {
+                var op = Previous().Value;
+                var right = ParseAddition();
+                expr = new DtsBinaryExpression(expr, op, right);
+            }
+
+            return expr;
+        }
+
+        /// <summary>
+        /// 解析加减表达式 (+ -)
+        /// </summary>
+        private DtsExpression ParseAddition()
+        {
+            var expr = ParseUnary();
+
+            while (Match(TokenType.Plus, TokenType.Minus))
+            {
+                var op = Previous().Value;
+                var right = ParseUnary();
+                expr = new DtsBinaryExpression(expr, op, right);
+            }
+
+            return expr;
+        }
+
+        /// <summary>
+        /// 解析一元表达式 (- ~ !)
+        /// </summary>
+        private DtsExpression ParseUnary()
+        {
+            if (Match(TokenType.Minus, TokenType.Tilde))
+            {
+                var op = Previous().Value;
+                var expr = ParseUnary();
+                return new DtsUnaryExpression(op, expr);
+            }
+
+            return ParsePrimary();
+        }
+
+        /// <summary>
+        /// 解析基本表达式（数字、标识符、函数调用、括号表达式）
+        /// </summary>
+        private DtsExpression ParsePrimary()
+        {
+            // 数字
+            if (Match(TokenType.Number))
+            {
+                return new DtsNumberExpression(Previous().Value, false);
+            }
+
+            // 十六进制数字
+            if (Match(TokenType.HexNumber))
+            {
+                return new DtsNumberExpression(Previous().Value, true);
+            }
+
+            // 标识符或函数调用
+            if (Match(TokenType.Identifier))
+            {
+                var name = Previous().Value;
+
+                // 检查是否为函数调用
+                if (Check(TokenType.LeftParen))
+                {
+                    return ParseFunctionCall(name);
+                }
+                else
+                {
+                    return new DtsIdentifierExpression(name);
+                }
+            }
+
+            // 括号表达式
+            if (Match(TokenType.LeftParen))
+            {
+                var expr = ParseExpression();
+                Consume(TokenType.RightParen, "Expected ')' after expression");
+                return expr;
+            }
+
+            throw new ParseException($"Unexpected token: {Peek().Value}", Peek().Line);
+        }
+
+        /// <summary>
+        /// 解析函数调用
+        /// </summary>
+        private DtsFunctionCallExpression ParseFunctionCall(string functionName)
+        {
+            Consume(TokenType.LeftParen, "Expected '(' after function name");
+
+            var arguments = new List<DtsExpression>();
+
+            if (!Check(TokenType.RightParen))
+            {
+                do
+                {
+                    // Skip newlines in function arguments
+                    SkipNewlines();
+
+                    arguments.Add(ParseExpression());
+
+                    SkipNewlines();
+                }
+                while (Match(TokenType.Comma));
+            }
+
+            Consume(TokenType.RightParen, "Expected ')' after function arguments");
+            return new DtsFunctionCallExpression(functionName, arguments);
+        }
+
+        /// <summary>
+        /// 跳过换行符
+        /// </summary>
+        private void SkipNewlines()
+        {
+            while (Match(TokenType.Newline))
+            {
+                // 继续跳过
+            }
+        }
+
+        // 辅助方法
+        private bool Match(params TokenType[] types)
+        {
+            foreach (var type in types)
+            {
+                if (Check(type))
+                {
+                    Advance();
+                    return true;
+                }
+            }
+            return false;
+        }
+
         private bool Check(TokenType type)
         {
             if (IsAtEnd()) return false;
-            return Current().Type == type;
+            return Peek().Type == type;
         }
 
-        /// <summary>
-        /// 检查下一个token是否为指定类型
-        /// </summary>
-        private bool CheckNext(TokenType type)
-        {
-            if (_position + 1 >= _tokens.Count) return false;
-            return _tokens[_position + 1].Type == type;
-        }
-
-        /// <summary>
-        /// 前进并返回当前token
-        /// </summary>
         private Token Advance()
         {
             if (!IsAtEnd()) _position++;
             return Previous();
         }
 
-        /// <summary>
-        /// 检查是否到达token列表末尾
-        /// </summary>
         private bool IsAtEnd()
         {
-            return Current().Type == TokenType.EOF;
+            return Peek().Type == TokenType.EOF;
         }
 
-        /// <summary>
-        /// 获取当前token
-        /// </summary>
-        private Token Current()
+        private Token Peek()
         {
             return _tokens[_position];
         }
 
-        /// <summary>
-        /// 获取前一个token
-        /// </summary>
         private Token Previous()
         {
             return _tokens[_position - 1];
         }
 
-        /// <summary>
-        /// 窥视下一个token
-        /// </summary>
-        private Token Peek()
+        private Token Consume(TokenType type, string message)
+        {
+            if (Check(type)) return Advance();
+            throw new ParseException(message, Peek().Line);
+        }
+
+        // 其他现有方法保持不变...
+        public DtsDocument ParseDocument()
+        {
+            var document = new DtsDocument();
+
+            while (!IsAtEnd())
+            {
+                SkipNewlines();
+
+                if (IsAtEnd())
+                    break;
+
+                if (Check(TokenType.Slash) && PeekNext()?.Type == TokenType.Identifier && PeekNext()?.Value == "dts-v1")
+                {
+                    document.Version = ParseVersionDirective();
+                }
+                else if (Check(TokenType.Include))
+                {
+                    document.AddInclude(ParseIncludeDirective());
+                }
+                else if (Check(TokenType.Slash))
+                {
+                    document.RootNode = ParseNode();
+                    break;
+                }
+                else
+                {
+                    Advance(); // Skip unexpected tokens
+                }
+            }
+
+            return document;
+        }
+
+        private Token PeekNext()
         {
             if (_position + 1 >= _tokens.Count)
-                return new Token(TokenType.EOF, "", 0, 0);
+                return null;
             return _tokens[_position + 1];
         }
 
-        /// <summary>
-        /// 窥视下下个token
-        /// </summary>
-        private Token PeekNext()
+        private DtsNode ParseNode()
         {
-            if (_position + 2 >= _tokens.Count)
-                return new Token(TokenType.EOF, "", 0, 0);
-            return _tokens[_position + 2];
+            var name = "/";
+
+            if (Check(TokenType.Slash))
+            {
+                Advance(); // consume '/'
+            }
+            else if (Check(TokenType.Identifier))
+            {
+                name = Advance().Value;
+
+                if (Check(TokenType.Colon))
+                {
+                    Advance(); // consume ':'
+                    name += ":" + Consume(TokenType.Identifier, "Expected identifier after ':'").Value;
+                }
+
+                if (Check(TokenType.At))
+                {
+                    Advance(); // consume '@'
+                    name += "@" + Consume(TokenType.Identifier, "Expected identifier after '@'").Value;
+                }
+            }
+
+            var node = new DtsNode(name);
+
+            Consume(TokenType.LeftBrace, "Expected '{' after node name");
+            SkipNewlines();
+
+            while (!Check(TokenType.RightBrace) && !IsAtEnd())
+            {
+                SkipNewlines();
+
+                if (Check(TokenType.RightBrace))
+                    break;
+
+                if (Check(TokenType.Identifier))
+                {
+                    var nextToken = PeekNext();
+                    if (nextToken?.Type == TokenType.LeftBrace ||
+                        nextToken?.Type == TokenType.Colon ||
+                        nextToken?.Type == TokenType.At)
+                    {
+                        // 子节点
+                        node.AddChild(ParseNode());
+                    }
+                    else if (nextToken?.Type == TokenType.Equals)
+                    {
+                        // 属性
+                        node.AddProperty(ParseProperty());
+                    }
+                    else
+                    {
+                        // 可能是没有值的属性
+                        var propName = Advance().Value;
+                        node.AddProperty(new DtsProperty(propName, new List<DtsPropertyValue>()));
+
+                        if (Check(TokenType.Semicolon))
+                        {
+                            Advance();
+                        }
+                    }
+                }
+                else
+                {
+                    Advance(); // Skip unexpected tokens
+                }
+
+                SkipNewlines();
+            }
+
+            Consume(TokenType.RightBrace, "Expected '}' after node body");
+
+            if (Check(TokenType.Semicolon))
+            {
+                Advance(); // consume optional semicolon
+            }
+
+            return node;
         }
 
-        /// <summary>
-        /// 消费指定类型的token，如果不匹配则抛出异常
-        /// </summary>
-        private Token Consume(TokenType type, string message)
+        private DtsProperty ParseProperty()
         {
-            if (Check(type))
-                return Advance();
+            var name = Consume(TokenType.Identifier, "Expected property name").Value;
+            Consume(TokenType.Equals, "Expected '=' after property name");
 
-            throw new ParseException($"{message}. Got: {Current()}", Current().Line);
+            var values = new List<DtsPropertyValue>();
+
+            // Skip newlines after '='
+            SkipNewlines();
+
+            do
+            {
+                SkipNewlines();
+                values.Add(ParsePropertyValue());
+                SkipNewlines();
+            }
+            while (Match(TokenType.Comma));
+
+            Consume(TokenType.Semicolon, "Expected ';' after property");
+
+            return new DtsProperty(name, values);
         }
 
-        #endregion
+        private DtsPropertyValue ParseReference()
+        {
+            Consume(TokenType.Ampersand, "Expected '&'");
+            var refName = Consume(TokenType.Identifier, "Expected reference name").Value;
+            return new DtsPropertyValue(DtsPropertyValueType.Reference, "&" + refName);
+        }
+
+        private string ParseVersionDirective()
+        {
+            var sb = new StringBuilder();
+
+            Consume(TokenType.Slash, "Expected '/'");
+            sb.Append("/");
+
+            var identifier = Consume(TokenType.Identifier, "Expected 'dts-v1'");
+            if (identifier.Value != "dts-v1")
+            {
+                throw new ParseException("Expected 'dts-v1'", identifier.Line);
+            }
+            sb.Append(identifier.Value);
+
+            Consume(TokenType.Slash, "Expected '/' after 'dts-v1'");
+            sb.Append("/");
+
+            Consume(TokenType.Semicolon, "Expected ';' after version declaration");
+            sb.Append(";");
+
+            return sb.ToString();
+        }
+
+        public DtsIncludeDirective ParseIncludeDirective()
+        {
+            var includeLine = Peek().Line;
+            Consume(TokenType.Include, "Expected '#include'");
+
+            bool isSystemInclude = false;
+            string path = "";
+
+            if (Check(TokenType.LeftAngle))
+            {
+                isSystemInclude = true;
+                Advance(); // consume '<'
+
+                var pathBuilder = new StringBuilder();
+                while (!Check(TokenType.RightAngle) && !IsAtEnd())
+                {
+                    if (Check(TokenType.Identifier))
+                    {
+                        pathBuilder.Append(Advance().Value);
+                    }
+                    else if (Check(TokenType.Slash))
+                    {
+                        pathBuilder.Append(Advance().Value);
+                    }
+                    else if (Check(TokenType.Dot))
+                    {
+                        pathBuilder.Append(Advance().Value);
+                    }
+                    else if (Check(TokenType.Minus))
+                    {
+                        pathBuilder.Append(Advance().Value);
+                    }
+                    else if (Check(TokenType.Comma))
+                    {
+                        pathBuilder.Append(Advance().Value);
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+
+                path = pathBuilder.ToString();
+                Consume(TokenType.RightAngle, "Expected '>' after include path");
+            }
+            else if (Check(TokenType.String))
+            {
+                isSystemInclude = false;
+                path = Advance().Value;
+            }
+            else
+            {
+                throw new ParseException("Expected '<' or '\"' after #include", Peek().Line);
+            }
+
+            return new DtsIncludeDirective(path, isSystemInclude, includeLine);
+        }
+
+        internal DtsNode Parse()
+        {
+            throw new NotImplementedException();
+        }
     }
 }

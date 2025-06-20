@@ -11,7 +11,15 @@ namespace DtsParser
     {
         public string Name { get; set; }
         public DtsValue Value { get; set; }
+        public List<DtsPropertyValue> Values { get; set; }
         public int Line { get; set; }
+
+        public DtsProperty(string name, List<DtsPropertyValue> values, int line = 0)
+        {
+            Name = name;
+            Values = values;
+            Line = line;
+        }
 
         public DtsProperty(string name, DtsValue value = null, int line = 0)
         {

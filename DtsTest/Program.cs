@@ -28,10 +28,10 @@ namespace DtsTest
 
                 // 语法分析
                 var parser = new DtsParser.DtsParser(tokens);
-                var deviceTree = parser.Parse();
+                var deviceTree = parser.ParseDocument();
 
                 Console.WriteLine("\n===DtsParser Parse Tree ===");
-                DtsTreePrinter.PrintTree(deviceTree);
+                //DtsTreePrinter.PrintTree(deviceTree);
             }
             catch (Exception ex)
             {
