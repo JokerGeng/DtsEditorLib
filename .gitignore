@@ -5,5 +5,9 @@
 /.vs
 /DtsEditorLib/bin/*
 /DtsEditorLib/obj/*
-/DtsTest/bin/
-/DtsTest/obj
+/DtsTest/bin/*
+/DtsTest/obj/*
+/DtsParser/bin/*
+/DtsParser/obj/*
+/DotNet.DTS/bin/*
+/DotNet.DTS/obj/*
