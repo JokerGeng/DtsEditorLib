@@ -8,36 +8,34 @@ namespace DtsParser
     public enum TokenType
     {
         // 基本符号
-        LBRACE,         // {
-        RBRACE,         // }
-        SEMICOLON,      // ;
-        EQUALS,         // =
-        COMMA,          // ,
-        LPAREN,         // (
-        RPAREN,         // )
-        LANGLE,         // <
-        RANGLE,         // >
-        SLASH,          // /
+        LeftBrace,      // {
+        RightBrace,     // }
+        LeftParen,      // (
+        RightParen,     // )
+        LeftBracket,    // [
+        RightBracket,   // ]
+        LeftAngle,      // <
+        RightAngle,     // >
+        Semicolon,      // ;
+        Comma,          // ,
+        Equals,         // =
+        Ampersand,      // &
+        Slash,          // /
 
-        // 字面量
-        IDENTIFIER,     // 标识符
-        STRING,         // 字符串字面量
-        NUMBER,         // 数字
+        // 数据类型
+        Identifier,     // 标识符
+        String,         // 字符串字面量
+        Number,         // 数字
+        HexNumber,      // 十六进制数字
 
-        // 关键字
-        DELETE_NODE,    // /delete-node/
-        DELETE_PROP,    // /delete-property/
-
-        // 预处理指令
-        INCLUDE,        // #include
-        DEFINE,         // #define
+        // 关键字和指令
+        Include,        // #include
+        Define,         // #define
 
         // 特殊
-        REFERENCE,      // &label 或 &{/path}
-        LABEL,          // label:
-        NEWLINE,
-        EOF,
-        COMMENT,
-        WHITESPACE
+        Comment,        // 注释
+        Newline,        // 换行
+        EOF,            // 文件结束
+        Unknown         // 未知token
     }
 }

@@ -31,7 +31,7 @@ namespace DtsTest
                 var deviceTree = parser.Parse();
 
                 Console.WriteLine("\n===DtsParser Parse Tree ===");
-                PrintDeviceTree(deviceTree);
+                DtsTreePrinter.PrintTree(deviceTree);
             }
             catch (Exception ex)
             {
@@ -122,123 +122,6 @@ namespace DtsTest
             //Console.ReadLine();
 
             #endregion
-        }
-
-        static void PrintDeviceTree(DeviceTreeNode deviceTree, int indent = 0)
-        {
-            var indentStr = new string(' ', indent * 2);
-
-            // 打印预处理指令
-            foreach (var include in deviceTree.Includes)
-            {
-                Console.WriteLine($"{indentStr}#include \"{include.FilePath}\"");
-            }
-            foreach (var define in deviceTree.Defines)
-            {
-                Console.WriteLine($"{indentStr}#define {define.Name} {define.Value}");
-            }
-
-            if (deviceTree.Includes.Count > 0 || deviceTree.Defines.Count > 0)
-                Console.WriteLine();
-
-            // 打印根节点
-            PrintNode(deviceTree.RootNode, indent);
-        }
-
-        static void PrintNode(DtsNode node, int indent = 0)
-        {
-            var indentStr = new string(' ', indent * 2);
-
-            // 打印标签
-            if (!string.IsNullOrEmpty(node.Label))
-            {
-                Console.WriteLine($"{indentStr}{node.Label}:");
-            }
-
-            // 打印节点名
-            Console.WriteLine($"{indentStr}{node.FullName} {{");
-
-            // 打印删除指令
-            foreach (var deletedProp in node.DeletedProperties)
-            {
-                Console.WriteLine($"{indentStr}  /delete-property/ {deletedProp};");
-            }
-
-            foreach (var deletedNode in node.DeletedNodes)
-            {
-                Console.WriteLine($"{indentStr}  /delete-node/ {deletedNode};");
-            }
-
-            // 打印属性
-            foreach (var property in node.Properties)
-            {
-                PrintProperty(property, indent + 1);
-            }
-
-            // 打印子节点
-            foreach (var child in node.Children)
-            {
-                Console.WriteLine();
-                PrintNode(child, indent + 1);
-            }
-
-            Console.WriteLine($"{indentStr}}}");
-        }
-
-        static void PrintProperty(Property property, int indent)
-        {
-            var indentStr = new string(' ', indent * 2);
-
-            if (property.Values.Count == 0)
-            {
-                Console.WriteLine($"{indentStr}{property.Name};");
-            }
-            else
-            {
-                Console.Write($"{indentStr}{property.Name} = ");
-
-                if (property.Values.Count == 1)
-                {
-                    PrintPropertyValue(property.Values[0]);
-                }
-                else
-                {
-                    Console.Write("<");
-                    for (int i = 0; i < property.Values.Count; i++)
-                    {
-                        if (i > 0) Console.Write(", ");
-                        PrintPropertyValue(property.Values[i]);
-                    }
-                    Console.Write(">");
-                }
-
-                Console.WriteLine(";");
-            }
-        }
-
-        static void PrintPropertyValue(PropertyValue value)
-        {
-            switch (value)
-            {
-                case StringValue str:
-                    Console.Write($"\"{str.Value}\"");
-                    break;
-                case NumberValue num:
-                    Console.Write(num.IsHex ? $"0x{num.Value:x}" : num.Value.ToString());
-                    break;
-                case ReferenceValue reference:
-                    Console.Write(reference.Reference);
-                    break;
-                case ArrayValue array:
-                    Console.Write("<");
-                    for (int i = 0; i < array.Values.Count; i++)
-                    {
-                        if (i > 0) Console.Write(", ");
-                        PrintPropertyValue(array.Values[i]);
-                    }
-                    Console.Write(">");
-                    break;
-            }
         }
     }
 }

@@ -6,6 +6,11 @@ namespace DtsParser
 {
     public class ParseException : Exception
     {
-        public ParseException(string message) : base(message) { }
+        public int Line { get; }
+
+        public ParseException(string message, int line = 0) : base(message)
+        {
+            Line = line;
+        }
     }
 }

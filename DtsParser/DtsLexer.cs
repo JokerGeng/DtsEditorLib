@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Text;
 using System.Text.RegularExpressions;
 
 namespace DtsParser
@@ -11,112 +13,340 @@ namespace DtsParser
         private int _line;
         private int _column;
 
-        // 正则表达式模式
-        private static readonly Dictionary<TokenType, Regex> TokenPatterns = new Dictionary<TokenType, Regex>
-    {
-        { TokenType.COMMENT, new Regex(@"^(//.*?$|/\*.*?\*/)", RegexOptions.Multiline | RegexOptions.Singleline) },
-        { TokenType.INCLUDE, new Regex(@"^#include\s*[<""]([^>""]+)[>""]") },
-        { TokenType.DEFINE, new Regex(@"^#define\s+(\w+)(?:\s+(.*))?") },
-        { TokenType.DELETE_NODE, new Regex(@"^/delete-node/") },
-        { TokenType.DELETE_PROP, new Regex(@"^/delete-property/") },
-        { TokenType.STRING, new Regex(@"^""([^""\\]|\\.)*""") },
-        { TokenType.REFERENCE, new Regex(@"^&(\w+|\{[^}]+\})") },
-        { TokenType.LABEL, new Regex(@"^(\w+):") },
-        { TokenType.IDENTIFIER, new Regex(@"^[a-zA-Z_][a-zA-Z0-9_\-,]*") },
-        { TokenType.NUMBER, new Regex(@"^(0x[0-9a-fA-F]+|0[0-7]+|\d+)") },
-        { TokenType.WHITESPACE, new Regex(@"^[ \t]+") },
-        { TokenType.NEWLINE, new Regex(@"^[\r\n]+") }
-    };
-
-        // 单字符token映射
-        private static readonly Dictionary<char, TokenType> SingleCharTokens = new Dictionary<char, TokenType>
-    {
-        { '{', TokenType.LBRACE },
-        { '}', TokenType.RBRACE },
-        { ';', TokenType.SEMICOLON },
-        { '=', TokenType.EQUALS },
-        { ',', TokenType.COMMA },
-        { '(', TokenType.LPAREN },
-        { ')', TokenType.RPAREN },
-        { '<', TokenType.LANGLE },
-        { '>', TokenType.RANGLE },
-        { '/', TokenType.SLASH }
-    };
-
         public DtsLexer(string input)
         {
-            _input = input;
+            _input = input ?? throw new ArgumentNullException(nameof(input));
             _position = 0;
             _line = 1;
             _column = 1;
         }
 
+        /// <summary>
+        /// 获取所有tokens
+        /// </summary>
         public List<Token> Tokenize()
         {
             var tokens = new List<Token>();
+            Token token;
 
-            while (_position < _input.Length)
+            do
             {
-                var token = NextToken();
-                if (token != null && token.Type != TokenType.WHITESPACE/* && token.Type != TokenType.COMMENT*/)
+                token = NextToken();
+                if (token.Type != TokenType.Comment) // 过滤掉注释
                 {
                     tokens.Add(token);
                 }
-            }
+            } while (token.Type != TokenType.EOF);
 
-            tokens.Add(new Token(TokenType.EOF, "", _line, _column));
             return tokens;
         }
 
+        /// <summary>
+        /// 获取下一个token
+        /// </summary>
         private Token NextToken()
         {
+            SkipWhitespace();
+
             if (_position >= _input.Length)
-                return null;
+                return new Token(TokenType.EOF, "", _line, _column);
 
-            // 尝试匹配多字符token
-            var remaining = _input.Substring(_position);
-
-            foreach (var pattern in TokenPatterns)
-            {
-                var match = pattern.Value.Match(remaining);
-                if (match.Success)
-                {
-                    var value = match.Value;
-                    var token = new Token(pattern.Key, value, _line, _column);
-                    Advance(value);
-                    return token;
-                }
-            }
-
-            // 尝试匹配单字符token
             var currentChar = _input[_position];
-            if (SingleCharTokens.ContainsKey(currentChar))
+            var currentLine = _line;
+            var currentColumn = _column;
+
+            // 处理单字符token
+            switch (currentChar)
             {
-                var token = new Token(SingleCharTokens[currentChar], currentChar.ToString(), _line, _column);
-                Advance(currentChar.ToString());
-                return token;
+                case '{':
+                    Advance();
+                    return new Token(TokenType.LeftBrace, "{", currentLine, currentColumn);
+                case '}':
+                    Advance();
+                    return new Token(TokenType.RightBrace, "}", currentLine, currentColumn);
+                case '(':
+                    Advance();
+                    return new Token(TokenType.LeftParen, "(", currentLine, currentColumn);
+                case ')':
+                    Advance();
+                    return new Token(TokenType.RightParen, ")", currentLine, currentColumn);
+                case '[':
+                    Advance();
+                    return new Token(TokenType.LeftBracket, "[", currentLine, currentColumn);
+                case ']':
+                    Advance();
+                    return new Token(TokenType.RightBracket, "]", currentLine, currentColumn);
+                case '<':
+                    Advance();
+                    return new Token(TokenType.LeftAngle, "<", currentLine, currentColumn);
+                case '>':
+                    Advance();
+                    return new Token(TokenType.RightAngle, ">", currentLine, currentColumn);
+                case ';':
+                    Advance();
+                    return new Token(TokenType.Semicolon, ";", currentLine, currentColumn);
+                case ',':
+                    Advance();
+                    return new Token(TokenType.Comma, ",", currentLine, currentColumn);
+                case '=':
+                    Advance();
+                    return new Token(TokenType.Equals, "=", currentLine, currentColumn);
+                case '&':
+                    Advance();
+                    return new Token(TokenType.Ampersand, "&", currentLine, currentColumn);
+                case '\n':
+                    Advance();
+                    return new Token(TokenType.Newline, "\n", currentLine, currentColumn);
             }
 
-            // 未知字符，跳过
-            Advance(currentChar.ToString());
-            return NextToken();
+            // 处理注释
+            if (currentChar == '/' && Peek() == '/')
+            {
+                return ReadLineComment();
+            }
+            if (currentChar == '/' && Peek() == '*')
+            {
+                return ReadBlockComment();
+            }
+
+            // 处理字符串
+            if (currentChar == '"')
+            {
+                return ReadString();
+            }
+
+            // 处理预处理指令
+            if (currentChar == '#')
+            {
+                return ReadPreprocessorDirective();
+            }
+
+            // 处理数字
+            if (char.IsDigit(currentChar) || (currentChar == '0' && Peek() == 'x'))
+            {
+                return ReadNumber();
+            }
+
+            // 处理标识符
+            if (char.IsLetter(currentChar) || currentChar == '_')
+            {
+                return ReadIdentifier();
+            }
+
+            // 未知字符
+            var unknownChar = currentChar.ToString();
+            Advance();
+            return new Token(TokenType.Unknown, unknownChar, currentLine, currentColumn);
         }
 
-        private void Advance(string text)
+        /// <summary>
+        /// 跳过空白字符（除了换行符）
+        /// </summary>
+        private void SkipWhitespace()
         {
-            foreach (var c in text)
+            while (_position < _input.Length &&
+                   char.IsWhiteSpace(_input[_position]) &&
+                   _input[_position] != '\n')
             {
-                _position++;
-                if (c == '\n')
+                Advance();
+            }
+        }
+
+        /// <summary>
+        /// 读取行注释
+        /// </summary>
+        private Token ReadLineComment()
+        {
+            var startLine = _line;
+            var startColumn = _column;
+            var sb = new StringBuilder();
+
+            while (_position < _input.Length && _input[_position] != '\n')
+            {
+                sb.Append(_input[_position]);
+                Advance();
+            }
+
+            return new Token(TokenType.Comment, sb.ToString(), startLine, startColumn);
+        }
+
+        /// <summary>
+        /// 读取块注释
+        /// </summary>
+        private Token ReadBlockComment()
+        {
+            var startLine = _line;
+            var startColumn = _column;
+            var sb = new StringBuilder();
+
+            Advance(); // skip '/'
+            Advance(); // skip '*'
+
+            while (_position < _input.Length - 1)
+            {
+                if (_input[_position] == '*' && _input[_position + 1] == '/')
                 {
-                    _line++;
-                    _column = 1;
+                    sb.Append("*/");
+                    Advance();
+                    Advance();
+                    break;
+                }
+                sb.Append(_input[_position]);
+                Advance();
+            }
+
+            return new Token(TokenType.Comment, sb.ToString(), startLine, startColumn);
+        }
+
+        /// <summary>
+        /// 读取字符串字面量
+        /// </summary>
+        private Token ReadString()
+        {
+            var startLine = _line;
+            var startColumn = _column;
+            var sb = new StringBuilder();
+
+            Advance(); // skip opening quote
+
+            while (_position < _input.Length && _input[_position] != '"')
+            {
+                if (_input[_position] == '\\' && _position + 1 < _input.Length)
+                {
+                    Advance(); // skip backslash
+                    var escapeChar = _input[_position];
+                    switch (escapeChar)
+                    {
+                        case 'n': sb.Append('\n'); break;
+                        case 't': sb.Append('\t'); break;
+                        case 'r': sb.Append('\r'); break;
+                        case '\\': sb.Append('\\'); break;
+                        case '"': sb.Append('"'); break;
+                        default: sb.Append(escapeChar); break;
+                    }
                 }
                 else
                 {
-                    _column++;
+                    sb.Append(_input[_position]);
+                }
+                Advance();
+            }
+
+            if (_position < _input.Length)
+                Advance(); // skip closing quote
+
+            return new Token(TokenType.String, sb.ToString(), startLine, startColumn);
+        }
+
+        /// <summary>
+        /// 读取预处理指令
+        /// </summary>
+        private Token ReadPreprocessorDirective()
+        {
+            var startLine = _line;
+            var startColumn = _column;
+            var sb = new StringBuilder();
+
+            while (_position < _input.Length &&
+                   (char.IsLetterOrDigit(_input[_position]) || _input[_position] == '#' || _input[_position] == '_'))
+            {
+                sb.Append(_input[_position]);
+                Advance();
+            }
+
+            var directive = sb.ToString();
+            TokenType type = directive switch
+            {
+                "#include" => TokenType.Include,
+                "#define" => TokenType.Define,
+                _ => TokenType.Unknown
+            };
+
+            return new Token(type, directive, startLine, startColumn);
+        }
+
+        /// <summary>
+        /// 读取数字
+        /// </summary>
+        private Token ReadNumber()
+        {
+            var startLine = _line;
+            var startColumn = _column;
+            var sb = new StringBuilder();
+            var isHex = false;
+
+            // 检查是否为十六进制
+            if (_input[_position] == '0' && _position + 1 < _input.Length &&
+                char.ToLower(_input[_position + 1]) == 'x')
+            {
+                isHex = true;
+                sb.Append(_input[_position++]);
+                sb.Append(_input[_position++]);
+                _column += 2;
+            }
+
+            while (_position < _input.Length)
+            {
+                var ch = _input[_position];
+                if (isHex ? char.IsDigit(ch) || (ch >= 'a' && ch <= 'f') || (ch >= 'A' && ch <= 'F')
+                         : char.IsDigit(ch))
+                {
+                    sb.Append(ch);
+                    Advance();
+                }
+                else
+                {
+                    break;
                 }
             }
+
+            var tokenType = isHex ? TokenType.HexNumber : TokenType.Number;
+            return new Token(tokenType, sb.ToString(), startLine, startColumn);
+        }
+
+        /// <summary>
+        /// 读取标识符
+        /// </summary>
+        private Token ReadIdentifier()
+        {
+            var startLine = _line;
+            var startColumn = _column;
+            var sb = new StringBuilder();
+
+            while (_position < _input.Length &&
+                   (char.IsLetterOrDigit(_input[_position]) || _input[_position] == '_' ||
+                    _input[_position] == '-' || _input[_position] == '.'))
+            {
+                sb.Append(_input[_position]);
+                Advance();
+            }
+
+            return new Token(TokenType.Identifier, sb.ToString(), startLine, startColumn);
+        }
+
+        /// <summary>
+        /// 前进一个字符位置
+        /// </summary>
+        private void Advance()
+        {
+            if (_position < _input.Length && _input[_position] == '\n')
+            {
+                _line++;
+                _column = 1;
+            }
+            else
+            {
+                _column++;
+            }
+            _position++;
+        }
+
+        /// <summary>
+        /// 窥视下一个字符但不前进位置
+        /// </summary>
+        private char Peek()
+        {
+            return _position + 1 < _input.Length ? _input[_position + 1] : '\0';
         }
     }
 }
