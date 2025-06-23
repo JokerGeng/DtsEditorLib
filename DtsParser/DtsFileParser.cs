@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
@@ -36,7 +35,7 @@ namespace DtsParser
 
                 // 语法分析
                 var parser = new DtsParser(tokens);
-                return parser.Parse();
+                return parser.ParseDocument().RootNode;
             }
             catch (Exception ex)
             {

@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using System.Text.RegularExpressions;
 
 namespace DtsParser
 {
@@ -20,6 +19,138 @@ namespace DtsParser
             _position = 0;
         }
 
+        public DtsDocument ParseDocument()
+        {
+            var document = new DtsDocument();
+            ParseHeaderComment(document);
+            while (!IsAtEnd())
+            {
+                SkipNewlines();
+
+                if (IsAtEnd())
+                    break;
+
+                if (Check(TokenType.Slash) && PeekNext()?.Type == TokenType.Identifier && PeekNext()?.Value.Contains("dts-v") == true)
+                {
+                    document.Version = ParseVersionDirective();
+                }
+                else if (Check(TokenType.Include))
+                {
+                    document.AddInclude(ParseIncludeDirective());
+                }
+                else if (Check(TokenType.Slash))
+                {
+                    document.RootNode = ParseNode();
+                    break;
+                }
+                else
+                {
+                    Advance(); // Skip unexpected tokens
+                }
+            }
+
+            return document;
+        }
+
+        private DtsNode ParseNode()
+        {
+            var name = "/";
+
+            if (Check(TokenType.Slash))
+            {
+                Advance(); // consume '/'
+            }
+            else if (Check(TokenType.Identifier))
+            {
+                name = Advance().Value;
+
+                if (Check(TokenType.Colon))
+                {
+                    Advance(); // consume ':'
+                    name += ":" + Consume(TokenType.Identifier, "Expected identifier after ':'").Value;
+                }
+
+                if (Check(TokenType.At))
+                {
+                    Advance(); // consume '@'
+                    name += "@" + Consume(TokenType.Identifier, "Expected identifier after '@'").Value;
+                }
+            }
+
+            var node = new DtsNode(name);
+
+            Consume(TokenType.LeftBrace, "Expected '{' after node name");
+            SkipNewlines();
+
+            while (!Check(TokenType.RightBrace) && !IsAtEnd())
+            {
+                SkipNewlines();
+
+                if (Check(TokenType.RightBrace))
+                    break;
+
+                if (Check(TokenType.Identifier))
+                {
+                    var nextToken = PeekNext();
+                    if (nextToken?.Type == TokenType.LeftBrace ||
+                        nextToken?.Type == TokenType.Colon ||
+                        nextToken?.Type == TokenType.At)
+                    {
+                        // 子节点
+                        node.AddChild(ParseNode());
+                    }
+                    else if (nextToken?.Type == TokenType.Equals)
+                    {
+                        // 属性
+                        node.AddProperty(ParseProperty());
+                    }
+                    else
+                    {
+                        // 可能是没有值的属性
+                        var propName = Advance().Value;
+                        node.AddProperty(new DtsProperty(propName, new List<DtsPropertyValue>()));
+
+                        if (Check(TokenType.Semicolon))
+                        {
+                            Advance();
+                        }
+                    }
+                }
+                else
+                {
+                    Advance(); // Skip unexpected tokens
+                }
+
+                SkipNewlines();
+            }
+
+            Consume(TokenType.RightBrace, "Expected '}' after node body");
+
+            if (Check(TokenType.Semicolon))
+            {
+                Advance(); // consume optional semicolon
+            }
+
+            return node;
+        }
+
+        private void ParseHeaderComment(DtsDocument document)
+        {
+            while (Check(TokenType.Comment) || Check(TokenType.Newline))
+            {
+                var curr = Peek();
+                if (Check(TokenType.Comment))
+                {
+                    document.Comments.Add(curr.Value);
+                    Consume(TokenType.Comment, "Expected comment");
+                }
+                else
+                {
+                    Consume(TokenType.Newline, "Expected newLine");
+                }
+            }
+        }
+
         // <summary>
         /// 解析属性值 - 改进版，支持复杂表达式
         /// </summary>
@@ -32,6 +163,12 @@ namespace DtsParser
             }
             else if (Check(TokenType.LeftAngle))
             {
+                SkipNewlines();
+                if (PeekNext().Type == TokenType.Ampersand)
+                {
+                    Consume(TokenType.LeftAngle, "Expected '<'");
+                    return ParseReference();
+                }
                 return ParseArrayValue();
             }
             else if (Check(TokenType.Ampersand))
@@ -349,127 +486,11 @@ namespace DtsParser
             throw new ParseException(message, Peek().Line);
         }
 
-        // 其他现有方法保持不变...
-        public DtsDocument ParseDocument()
-        {
-            var document = new DtsDocument();
-
-            while (!IsAtEnd())
-            {
-                SkipNewlines();
-
-                if (IsAtEnd())
-                    break;
-
-                if (Check(TokenType.Slash) && PeekNext()?.Type == TokenType.Identifier && PeekNext()?.Value == "dts-v1")
-                {
-                    document.Version = ParseVersionDirective();
-                }
-                else if (Check(TokenType.Include))
-                {
-                    document.AddInclude(ParseIncludeDirective());
-                }
-                else if (Check(TokenType.Slash))
-                {
-                    document.RootNode = ParseNode();
-                    break;
-                }
-                else
-                {
-                    Advance(); // Skip unexpected tokens
-                }
-            }
-
-            return document;
-        }
-
         private Token PeekNext()
         {
             if (_position + 1 >= _tokens.Count)
                 return null;
             return _tokens[_position + 1];
-        }
-
-        private DtsNode ParseNode()
-        {
-            var name = "/";
-
-            if (Check(TokenType.Slash))
-            {
-                Advance(); // consume '/'
-            }
-            else if (Check(TokenType.Identifier))
-            {
-                name = Advance().Value;
-
-                if (Check(TokenType.Colon))
-                {
-                    Advance(); // consume ':'
-                    name += ":" + Consume(TokenType.Identifier, "Expected identifier after ':'").Value;
-                }
-
-                if (Check(TokenType.At))
-                {
-                    Advance(); // consume '@'
-                    name += "@" + Consume(TokenType.Identifier, "Expected identifier after '@'").Value;
-                }
-            }
-
-            var node = new DtsNode(name);
-
-            Consume(TokenType.LeftBrace, "Expected '{' after node name");
-            SkipNewlines();
-
-            while (!Check(TokenType.RightBrace) && !IsAtEnd())
-            {
-                SkipNewlines();
-
-                if (Check(TokenType.RightBrace))
-                    break;
-
-                if (Check(TokenType.Identifier))
-                {
-                    var nextToken = PeekNext();
-                    if (nextToken?.Type == TokenType.LeftBrace ||
-                        nextToken?.Type == TokenType.Colon ||
-                        nextToken?.Type == TokenType.At)
-                    {
-                        // 子节点
-                        node.AddChild(ParseNode());
-                    }
-                    else if (nextToken?.Type == TokenType.Equals)
-                    {
-                        // 属性
-                        node.AddProperty(ParseProperty());
-                    }
-                    else
-                    {
-                        // 可能是没有值的属性
-                        var propName = Advance().Value;
-                        node.AddProperty(new DtsProperty(propName, new List<DtsPropertyValue>()));
-
-                        if (Check(TokenType.Semicolon))
-                        {
-                            Advance();
-                        }
-                    }
-                }
-                else
-                {
-                    Advance(); // Skip unexpected tokens
-                }
-
-                SkipNewlines();
-            }
-
-            Consume(TokenType.RightBrace, "Expected '}' after node body");
-
-            if (Check(TokenType.Semicolon))
-            {
-                Advance(); // consume optional semicolon
-            }
-
-            return node;
         }
 
         private DtsProperty ParseProperty()
@@ -583,9 +604,5 @@ namespace DtsParser
             return new DtsIncludeDirective(path, isSystemInclude, includeLine);
         }
 
-        internal DtsNode Parse()
-        {
-            throw new NotImplementedException();
-        }
     }
 }

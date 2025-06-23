@@ -1,13 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 
 namespace DtsParser
 {
-    public abstract class DtsExpression
+    public abstract class DtsExpression : DtsValue
     {
-        public abstract string ToString();
+
     }
 
     /// <summary>

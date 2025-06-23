@@ -9,7 +9,7 @@ namespace DtsParser
     /// </summary>
     public class DtsStringValue : DtsValue
     {
-        public string Value { get; set; }
+        public string Value { get;}
 
         public DtsStringValue(string value)
         {

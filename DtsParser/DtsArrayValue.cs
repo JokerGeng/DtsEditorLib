@@ -5,11 +5,11 @@ using System.Text;
 namespace DtsParser
 {
     /// <summary>
-    /// 数组值
+    /// 数组值<>
     /// </summary>
     public class DtsArrayValue : DtsValue
     {
-        public List<DtsValue> Values { get; set; }
+        public List<DtsValue> Values { get;}
 
         public DtsArrayValue()
         {
