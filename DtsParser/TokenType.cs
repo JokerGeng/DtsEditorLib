@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace DtsParser
+﻿namespace DtsParser
 {
     // Token类型枚举
     public enum TokenType
@@ -30,7 +26,10 @@ namespace DtsParser
         Identifier, String, Number, HexNumber, Character,
 
         // 关键字和指令
-        Include, Preprocessor,
+        Include, Preprocessor, Define,
+
+        //注释
+        Comment,
 
         // 特殊
         Newline, EOF,

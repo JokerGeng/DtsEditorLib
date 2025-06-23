@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
-using System.Text.RegularExpressions;
 
 namespace DtsParser
 {
@@ -59,7 +57,10 @@ namespace DtsParser
                     {
                         // 单行注释
                         while (Peek() != '\n' && !IsAtEnd())
+                        {
                             Advance();
+                        }
+                        AddToken(TokenType.Comment);
                     }
                     else if (Match('*'))
                     {
@@ -230,7 +231,11 @@ namespace DtsParser
             }
             else
             {
-                AddToken(TokenType.Preprocessor, directive);
+                while (Peek() != '=')
+                {
+                    Advance();
+                }
+                AddToken(TokenType.Identifier);
             }
         }
 
@@ -240,40 +245,43 @@ namespace DtsParser
 
             while (Peek() != '>' && !IsAtEnd())
             {
-                char c = Peek();
+                //把所有<>内容当作整体解析
+                Advance();
 
-                if (c == '/')
-                {
-                    if (_current > _start)
-                    {
-                        var identifier = _source.Substring(_start, _current - _start);
-                        AddToken(TokenType.Identifier, identifier);
-                    }
+                //char c = Peek();
 
-                    Advance();
-                    AddToken(TokenType.Slash, "/");
-                    _start = _current;
-                }
-                else if (c == '.')
-                {
-                    if (_current > _start)
-                    {
-                        var identifier = _source.Substring(_start, _current - _start);
-                        AddToken(TokenType.Identifier, identifier);
-                    }
+                //if (c == '/')
+                //{
+                //    if (_current > _start)
+                //    {
+                //        var identifier = _source.Substring(_start, _current - _start);
+                //        AddToken(TokenType.Identifier, identifier);
+                //    }
 
-                    Advance();
-                    AddToken(TokenType.Dot, ".");
-                    _start = _current;
-                }
-                else if (IsAlphaNumeric(c) || c == '_' || c == '-')
-                {
-                    Advance();
-                }
-                else
-                {
-                    break;
-                }
+                //    Advance();
+                //    AddToken(TokenType.Slash, "/");
+                //    _start = _current;
+                //}
+                //else if (c == '.')
+                //{
+                //    if (_current > _start)
+                //    {
+                //        var identifier = _source.Substring(_start, _current - _start);
+                //        AddToken(TokenType.Identifier, identifier);
+                //    }
+
+                //    Advance();
+                //    AddToken(TokenType.Dot, ".");
+                //    _start = _current;
+                //}
+                //else if (IsAlphaNumeric(c) || c == '_' || c == '-')
+                //{
+                //    Advance();
+                //}
+                //else
+                //{
+                //    break;
+                //}
             }
 
             if (_current > _start)
@@ -364,6 +372,7 @@ namespace DtsParser
 
                 Advance();
             }
+            AddToken(TokenType.Comment);
         }
     }
 }
