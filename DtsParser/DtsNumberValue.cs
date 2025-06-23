@@ -9,10 +9,10 @@ namespace DtsParser
     /// </summary>
     public class DtsNumberValue : DtsValue
     {
-        public long Value { get; set; }
+        public UInt64 Value { get; set; }
         public bool IsHex { get; set; }
 
-        public DtsNumberValue(long value, bool isHex = false)
+        public DtsNumberValue(UInt64 value, bool isHex = false)
         {
             Value = value;
             IsHex = isHex;

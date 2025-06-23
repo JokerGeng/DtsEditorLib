@@ -97,7 +97,9 @@ namespace DtsParser
                         nextToken?.Type == TokenType.At)
                     {
                         // 子节点
-                        node.AddChild(ParseNode());
+                        var childNode= ParseNode();
+                        childNode.Parent = node;
+                        node.AddChild(childNode);
                     }
                     else if (nextToken?.Type == TokenType.Equals)
                     {
@@ -152,24 +154,18 @@ namespace DtsParser
         }
 
         // <summary>
-        /// 解析属性值 - 改进版，支持复杂表达式
+        /// 解析属性值
         /// </summary>
         private DtsPropertyValue ParsePropertyValue()
         {
+            SkipNewlines();
             if (Check(TokenType.String))
             {
-                var stringValue = Advance().Value;
-                return new DtsPropertyValue(DtsPropertyValueType.String, stringValue);
+                return ParseString();
             }
-            else if (Check(TokenType.LeftAngle))
+            else if (Check(TokenType.LeftAngle) || Check(TokenType.String))
             {
-                SkipNewlines();
-                if (PeekNext().Type == TokenType.Ampersand)
-                {
-                    Consume(TokenType.LeftAngle, "Expected '<'");
-                    return ParseReference();
-                }
-                return ParseArrayValue();
+                return ParseCellArray();
             }
             else if (Check(TokenType.Ampersand))
             {
@@ -181,6 +177,79 @@ namespace DtsParser
                 var expr = ParseExpression();
                 return new DtsPropertyValue(DtsPropertyValueType.Expression, expr);
             }
+        }
+
+        private DtsPropertyValue ParseString()
+        {
+            SkipNewlines();
+            var stringValue = Consume(TokenType.String, "Expected string value").Value;
+            DtsPropertyValue dtsPropertyValue = new DtsPropertyValue(DtsPropertyValueType.String, stringValue);
+            if (Peek().Type == TokenType.Comma)
+            {
+                var dtsArrayValue = new DtsArrayValue();
+                dtsArrayValue.Values.Add(new DtsStringValue(stringValue));
+                while (Check(TokenType.Semicolon)==false)
+                {
+                    Consume(TokenType.Comma, "Expected ','");
+                    var value = new DtsStringValue(Consume(TokenType.String, "Expected string value").Value);
+                    dtsArrayValue.Values.Add(value);
+                }
+                dtsPropertyValue = new DtsPropertyValue(DtsPropertyValueType.Array, dtsArrayValue);
+            }
+            return dtsPropertyValue;
+        }
+
+        private DtsPropertyValue ParseCellArray()
+        {
+            Consume(TokenType.LeftAngle, "Expected '<'");
+
+            var valueTemp = new DtsArrayValue();
+            SkipNewlines();
+            while (!Check(TokenType.RightAngle) && !IsAtEnd())
+            {
+                SkipNewlines();
+                DtsValue childValue;
+                if (Check(TokenType.String))
+                {
+                    var stringValue = Advance().Value;
+                    childValue = new DtsStringValue(stringValue);
+                }
+                else if (Check(TokenType.Ampersand))
+                {
+                    childValue = ParseReferenceValue();
+                }
+                else if (Check(TokenType.HexNumber))
+                {
+                    var value = Convert.ToUInt64(Consume(TokenType.HexNumber, "Expected hex number").Value.Substring(2), 16);
+                    childValue = new DtsNumberValue(value, true);
+                }
+                else if (Check(TokenType.Number))
+                {
+                    var value = Convert.ToUInt64(Consume(TokenType.Number, "Expected number").Value);
+                    childValue = new DtsNumberValue(value);
+                }
+                else if (Check(TokenType.Identifier))
+                {
+                    //identify
+                    //ragard as string value
+                    childValue = new DtsStringValue("");
+                }
+                else
+                {
+                    throw new ParseException("Expected property value", Peek().Line);
+                }
+                SkipNewlines();
+                valueTemp.Values.Add(childValue);
+            }
+            Consume(TokenType.RightAngle, "Expected '>'");
+            return new DtsPropertyValue(DtsPropertyValueType.Array, valueTemp);
+        }
+
+        private DtsReferenceValue ParseReferenceValue()
+        {
+            Consume(TokenType.Ampersand, "Expected '&'");
+            var refName = Consume(TokenType.Identifier, "Expected reference name").Value;
+            return new DtsReferenceValue(refName);
         }
 
         private DtsPropertyValue ParseArrayValue()
@@ -496,6 +565,7 @@ namespace DtsParser
         private DtsProperty ParseProperty()
         {
             var name = Consume(TokenType.Identifier, "Expected property name").Value;
+            SkipNewlines();
             Consume(TokenType.Equals, "Expected '=' after property name");
 
             var values = new List<DtsPropertyValue>();
@@ -506,6 +576,7 @@ namespace DtsParser
             do
             {
                 SkipNewlines();
+                //每一对<>一个值
                 values.Add(ParsePropertyValue());
                 SkipNewlines();
             }

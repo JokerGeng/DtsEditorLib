@@ -4,15 +4,78 @@
     public enum TokenType
     {
         // 基本符号
-        LeftBrace, RightBrace,      // { }
-        LeftParen, RightParen,      // ( )
-        LeftAngle, RightAngle,      // < >
-        LeftBracket, RightBracket,  // [ ]
-        Comma, Semicolon, Colon,    // , ; :
-        Equals, Ampersand,          // = &
-        Minus, Plus, Dot,           // - + .
-        Slash,                      // /
-
+        /// <summary>
+        /// {
+        /// </summary>
+        LeftBrace,
+        /// <summary>
+        /// }
+        /// </summary>
+        RightBrace,
+        /// <summary>
+        /// (
+        /// </summary>
+        LeftParen,
+        /// <summary>
+        /// )
+        /// </summary>
+        RightParen,
+        /// <summary>
+        /// <
+        /// </summary>
+        LeftAngle,
+        /// <summary>
+        /// >
+        /// </summary>
+        RightAngle,
+        /// <summary>
+        /// [
+        /// </summary>
+        LeftBracket,
+        /// <summary>
+        /// ]
+        /// </summary>
+        RightBracket,
+        /// <summary>
+        /// ,
+        /// </summary>
+        Comma, 
+        /// <summary>
+        /// ;
+        /// </summary>
+        Semicolon, 
+        /// <summary>
+        /// :
+        /// </summary>
+        Colon,    
+        /// <summary>
+        /// =
+        /// </summary>
+        Equals, 
+        /// <summary>
+        /// &
+        /// </summary>
+        Ampersand, 
+        /// <summary>
+        /// -
+        /// </summary>
+        Minus, 
+        /// <summary>
+        /// +
+        /// </summary>
+        Plus, 
+        /// <summary>
+        /// .
+        /// </summary>
+        Dot,    
+        /// <summary>
+        /// /
+        /// </summary>
+        Slash,
+        /// <summary>
+        /// @
+        /// </summary>
+        At,
         // 位运算符和逻辑运算符
         Pipe,                       // | (位或)
         Caret,                      // ^ (位异或)
@@ -33,6 +96,5 @@
 
         // 特殊
         Newline, EOF,
-        At
     }
 }
