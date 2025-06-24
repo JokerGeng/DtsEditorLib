@@ -52,6 +52,104 @@ namespace DtsParser
             return document;
         }
 
+        private string ParseVersionDirective()
+        {
+            var sb = new StringBuilder();
+
+            Consume(TokenType.Slash, "Expected '/'");
+            sb.Append("/");
+
+            var identifier = Consume(TokenType.Identifier, "Expected 'dts-v1'");
+            if (identifier.Value != "dts-v1")
+            {
+                throw new ParseException("Expected 'dts-v1'", identifier.Line);
+            }
+            sb.Append(identifier.Value);
+
+            Consume(TokenType.Slash, "Expected '/' after 'dts-v1'");
+            sb.Append("/");
+
+            Consume(TokenType.Semicolon, "Expected ';' after version declaration");
+            sb.Append(";");
+
+            return sb.ToString();
+        }
+
+        public DtsIncludeDirective ParseIncludeDirective()
+        {
+            var includeLine = Peek().Line;
+            Consume(TokenType.Include, "Expected '#include'");
+
+            bool isSystemInclude = false;
+            string path = "";
+
+            if (Check(TokenType.LeftAngle))
+            {
+                isSystemInclude = true;
+                Advance(); // consume '<'
+
+                var pathBuilder = new StringBuilder();
+                while (!Check(TokenType.RightAngle) && !IsAtEnd())
+                {
+                    if (Check(TokenType.Identifier))
+                    {
+                        pathBuilder.Append(Advance().Value);
+                    }
+                    else if (Check(TokenType.Slash))
+                    {
+                        pathBuilder.Append(Advance().Value);
+                    }
+                    else if (Check(TokenType.Dot))
+                    {
+                        pathBuilder.Append(Advance().Value);
+                    }
+                    else if (Check(TokenType.Minus))
+                    {
+                        pathBuilder.Append(Advance().Value);
+                    }
+                    else if (Check(TokenType.Comma))
+                    {
+                        pathBuilder.Append(Advance().Value);
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+
+                path = pathBuilder.ToString();
+                Consume(TokenType.RightAngle, "Expected '>' after include path");
+            }
+            else if (Check(TokenType.String))
+            {
+                isSystemInclude = false;
+                path = Advance().Value;
+            }
+            else
+            {
+                throw new ParseException("Expected '<' or '\"' after #include", Peek().Line);
+            }
+
+            return new DtsIncludeDirective(path, isSystemInclude, includeLine);
+        }
+
+        private void ParseHeaderComment(DtsDocument document)
+        {
+            while (Check(TokenType.Comment) || Check(TokenType.Newline))
+            {
+                var curr = Peek();
+                if (Check(TokenType.Comment))
+                {
+                    document.Comments.Add(curr.Value);
+                    Consume(TokenType.Comment, "Expected comment");
+                }
+                else
+                {
+                    Consume(TokenType.Newline, "Expected newLine");
+                }
+            }
+        }
+
         private DtsNode ParseNode()
         {
             var name = "/";
@@ -136,26 +234,35 @@ namespace DtsParser
             return node;
         }
 
-        private void ParseHeaderComment(DtsDocument document)
+        private DtsProperty ParseProperty()
         {
-            while (Check(TokenType.Comment) || Check(TokenType.Newline))
+            var name = Consume(TokenType.Identifier, "Expected property name").Value;
+            SkipNewlines();
+            Consume(TokenType.Equals, "Expected '=' after property name");
+
+            var values = new List<DtsPropertyValue>();
+
+            // Skip newlines after '='
+            SkipNewlines();
+
+            do
             {
-                var curr = Peek();
-                if (Check(TokenType.Comment))
+                SkipNewlines();
+                //每一对<>一个值
+                var value = ParsePropertyValue();
+                if (value != null)
                 {
-                    document.Comments.Add(curr.Value);
-                    Consume(TokenType.Comment, "Expected comment");
+                    values.Add(value);
                 }
-                else
-                {
-                    Consume(TokenType.Newline, "Expected newLine");
-                }
+                SkipNewlines();
             }
+            while (Match(TokenType.Comma));
+
+            Consume(TokenType.Semicolon, "Expected ';' after property");
+
+            return new DtsProperty(name, values);
         }
 
-        // <summary>
-        /// 解析属性值
-        /// </summary>
         private DtsPropertyValue ParsePropertyValue()
         {
             SkipNewlines();
@@ -258,6 +365,20 @@ namespace DtsParser
             return new DtsPropertyValue(DtsPropertyValueType.Array, valueTemp);
         }
 
+        private DtsPropertyValue ParseReference()
+        {
+            Consume(TokenType.Ampersand, "Expected '&'");
+            var refName = Consume(TokenType.Identifier, "Expected reference name").Value;
+            return new DtsPropertyValue(DtsPropertyValueType.Reference, "&" + refName);
+        }
+
+        private DtsReferenceValue ParseReferenceValue()
+        {
+            Consume(TokenType.Ampersand, "Expected '&'");
+            var refName = Consume(TokenType.Identifier, "Expected reference name").Value;
+            return new DtsReferenceValue(refName);
+        }
+
         private DtsValue ParseMultiLine()
         {
             StringBuilder sb = new StringBuilder();
@@ -271,48 +392,6 @@ namespace DtsParser
             return dtsValue;
         }
 
-        private DtsReferenceValue ParseReferenceValue()
-        {
-            Consume(TokenType.Ampersand, "Expected '&'");
-            var refName = Consume(TokenType.Identifier, "Expected reference name").Value;
-            return new DtsReferenceValue(refName);
-        }
-
-        private DtsPropertyValue ParseArrayValue()
-        {
-            Consume(TokenType.LeftAngle, "Expected '<'");
-
-            var values = new List<DtsPropertyValue>();
-
-            // Skip newlines at the beginning
-            SkipNewlines();
-
-            while (!Check(TokenType.RightAngle) && !IsAtEnd())
-            {
-                // Skip newlines between values
-                SkipNewlines();
-
-                if (Check(TokenType.RightAngle))
-                    break;
-
-                var expr = ParseExpression();
-                values.Add(new DtsPropertyValue(DtsPropertyValueType.Expression, expr));
-
-                // Skip trailing newlines and whitespace
-                SkipNewlines();
-
-                // Check if we have more values (no comma needed in DTS arrays)
-                if (Check(TokenType.RightAngle))
-                    break;
-            }
-
-            Consume(TokenType.RightAngle, "Expected '>'");
-            return new DtsPropertyValue(DtsPropertyValueType.Array, values);
-        }
-
-        /// <summary>
-        /// 解析表达式（支持复杂的位运算和函数调用）
-        /// </summary>
         private DtsExpression ParseExpression()
         {
             return ParseLogicalOr();
@@ -523,9 +602,8 @@ namespace DtsParser
             return new DtsFunctionCallExpression(functionName, arguments);
         }
 
-        /// <summary>
-        /// 跳过换行符
-        /// </summary>
+        #region [aiding method]
+
         private void SkipNewlines()
         {
             while (Match(TokenType.Newline))
@@ -588,122 +666,7 @@ namespace DtsParser
             return _tokens[_position + 1];
         }
 
-        private DtsProperty ParseProperty()
-        {
-            var name = Consume(TokenType.Identifier, "Expected property name").Value;
-            SkipNewlines();
-            Consume(TokenType.Equals, "Expected '=' after property name");
-
-            var values = new List<DtsPropertyValue>();
-
-            // Skip newlines after '='
-            SkipNewlines();
-
-            do
-            {
-                SkipNewlines();
-                //每一对<>一个值
-                var value = ParsePropertyValue();
-                if (value != null)
-                {
-                    values.Add(value);
-                }
-                SkipNewlines();
-            }
-            while (Match(TokenType.Comma));
-
-            Consume(TokenType.Semicolon, "Expected ';' after property");
-
-            return new DtsProperty(name, values);
-        }
-
-        private DtsPropertyValue ParseReference()
-        {
-            Consume(TokenType.Ampersand, "Expected '&'");
-            var refName = Consume(TokenType.Identifier, "Expected reference name").Value;
-            return new DtsPropertyValue(DtsPropertyValueType.Reference, "&" + refName);
-        }
-
-        private string ParseVersionDirective()
-        {
-            var sb = new StringBuilder();
-
-            Consume(TokenType.Slash, "Expected '/'");
-            sb.Append("/");
-
-            var identifier = Consume(TokenType.Identifier, "Expected 'dts-v1'");
-            if (identifier.Value != "dts-v1")
-            {
-                throw new ParseException("Expected 'dts-v1'", identifier.Line);
-            }
-            sb.Append(identifier.Value);
-
-            Consume(TokenType.Slash, "Expected '/' after 'dts-v1'");
-            sb.Append("/");
-
-            Consume(TokenType.Semicolon, "Expected ';' after version declaration");
-            sb.Append(";");
-
-            return sb.ToString();
-        }
-
-        public DtsIncludeDirective ParseIncludeDirective()
-        {
-            var includeLine = Peek().Line;
-            Consume(TokenType.Include, "Expected '#include'");
-
-            bool isSystemInclude = false;
-            string path = "";
-
-            if (Check(TokenType.LeftAngle))
-            {
-                isSystemInclude = true;
-                Advance(); // consume '<'
-
-                var pathBuilder = new StringBuilder();
-                while (!Check(TokenType.RightAngle) && !IsAtEnd())
-                {
-                    if (Check(TokenType.Identifier))
-                    {
-                        pathBuilder.Append(Advance().Value);
-                    }
-                    else if (Check(TokenType.Slash))
-                    {
-                        pathBuilder.Append(Advance().Value);
-                    }
-                    else if (Check(TokenType.Dot))
-                    {
-                        pathBuilder.Append(Advance().Value);
-                    }
-                    else if (Check(TokenType.Minus))
-                    {
-                        pathBuilder.Append(Advance().Value);
-                    }
-                    else if (Check(TokenType.Comma))
-                    {
-                        pathBuilder.Append(Advance().Value);
-                    }
-                    else
-                    {
-                        break;
-                    }
-                }
-
-                path = pathBuilder.ToString();
-                Consume(TokenType.RightAngle, "Expected '>' after include path");
-            }
-            else if (Check(TokenType.String))
-            {
-                isSystemInclude = false;
-                path = Advance().Value;
-            }
-            else
-            {
-                throw new ParseException("Expected '<' or '\"' after #include", Peek().Line);
-            }
-
-            return new DtsIncludeDirective(path, isSystemInclude, includeLine);
-        }
+        #endregion[aiding method]
 
     }
 }
