@@ -11,6 +11,7 @@ namespace DtsParser
         Number,
         Reference,
         Array,
+        Bracket,
         Expression  // 新增：复杂表达式
     }
 

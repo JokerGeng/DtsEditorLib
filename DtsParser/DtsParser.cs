@@ -287,6 +287,10 @@ namespace DtsParser
             {
                 return ParseBitsLineValue();
             }
+            else if (Check(TokenType.LeftBracket))
+            {
+                return ParseBracket();
+            }
             else
             {
                 // 解析单个表达式
@@ -327,7 +331,7 @@ namespace DtsParser
                 {
                     SkipNewlines();
                     Consume(TokenType.Comma, "Expected ','");
-                    var value = new DtsStringValue(Consume(TokenType.String, "Expected string value").Value);
+                    var value = ParseStringValue();
                     dtsArrayValue.Values.Add(value);
                     SkipNewlines();
                 }
@@ -344,6 +348,11 @@ namespace DtsParser
         private DtsPropertyValue ParseReference()
         {
             return new DtsPropertyValue(DtsPropertyValueType.Reference, ParseReferenceValue());
+        }
+
+        private DtsPropertyValue ParseBracket()
+        {
+            return new DtsPropertyValue(DtsPropertyValueType.Bracket, ParseBracketValue());
         }
 
         private DtsArrayValue ParseCellArrayValue()
@@ -394,6 +403,32 @@ namespace DtsParser
                 valueTemp.Values.Add(childValue);
             }
             Consume(TokenType.RightAngle, "Expected '>'");
+            return valueTemp;
+        }
+
+        //mac-address property
+        // byte array
+        private DtsByteArrayValue ParseBracketValue()
+        {
+            Consume(TokenType.LeftBracket, "Expected '['");
+
+            var valueTemp = new DtsByteArrayValue();
+            SkipNewlines();
+            while (!Check(TokenType.RightBracket))
+            {
+                SkipNewlines();
+                if (Check(TokenType.Number) || Check(TokenType.Identifier))
+                {
+                    var stringValue = Consume(Peek().Type, "Expected mac address value").Value;
+                    valueTemp.Values.Add(stringValue);
+                }
+                else
+                {
+                    throw new ParseException("Expected byte array", Peek().Line);
+                }
+                SkipNewlines();
+            }
+            Consume(TokenType.RightBracket, "Expected ']'");
             return valueTemp;
         }
 
