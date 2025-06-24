@@ -270,7 +270,7 @@ namespace DtsParser
             {
                 return ParseString();
             }
-            else if (Check(TokenType.LeftAngle) || Check(TokenType.String))
+            else if (Check(TokenType.LeftAngle))
             {
                 return ParseCellArray();
             }
@@ -302,9 +302,15 @@ namespace DtsParser
             valueTemp.Values.Add(ParseBitsValue());
             while (!Check(TokenType.Semicolon))
             {
-                
+                SkipNewlines();
+                var value = ParseCellArrayValue();
+                valueTemp.Values.AddRange(value.Values);
+                if (Peek().Type != TokenType.Comma)
+                {
+                    break;
+                }
+                SkipNewlines();
             }
-
             return new DtsPropertyValue(DtsPropertyValueType.Array, valueTemp);
         }
 
@@ -319,9 +325,11 @@ namespace DtsParser
                 dtsArrayValue.Values.Add(new DtsStringValue(stringValue));
                 while (Check(TokenType.Semicolon) == false)
                 {
+                    SkipNewlines();
                     Consume(TokenType.Comma, "Expected ','");
                     var value = new DtsStringValue(Consume(TokenType.String, "Expected string value").Value);
                     dtsArrayValue.Values.Add(value);
+                    SkipNewlines();
                 }
                 dtsPropertyValue = new DtsPropertyValue(DtsPropertyValueType.Array, dtsArrayValue);
             }
@@ -329,6 +337,16 @@ namespace DtsParser
         }
 
         private DtsPropertyValue ParseCellArray()
+        {
+            return new DtsPropertyValue(DtsPropertyValueType.Array, ParseCellArrayValue());
+        }
+
+        private DtsPropertyValue ParseReference()
+        {
+            return new DtsPropertyValue(DtsPropertyValueType.Reference, ParseReferenceValue());
+        }
+
+        private DtsArrayValue ParseCellArrayValue()
         {
             Consume(TokenType.LeftAngle, "Expected '<'");
 
@@ -340,8 +358,7 @@ namespace DtsParser
                 DtsValue childValue;
                 if (Check(TokenType.String))
                 {
-                    var stringValue = Advance().Value;
-                    childValue = new DtsStringValue(stringValue);
+                    childValue = ParseStringValue();
                 }
                 else if (Check(TokenType.Ampersand))
                 {
@@ -349,13 +366,11 @@ namespace DtsParser
                 }
                 else if (Check(TokenType.HexNumber))
                 {
-                    var value = Convert.ToUInt64(Consume(TokenType.HexNumber, "Expected hex number").Value.Substring(2), 16);
-                    childValue = new DtsNumberValue(value, true);
+                    childValue = ParseHexNumberValue();
                 }
                 else if (Check(TokenType.Number))
                 {
-                    var value = Convert.ToUInt64(Consume(TokenType.Number, "Expected number").Value);
-                    childValue = new DtsNumberValue(value);
+                    childValue = ParseNumberValue();
                 }
                 else if (Check(TokenType.Identifier))
                 {
@@ -379,14 +394,7 @@ namespace DtsParser
                 valueTemp.Values.Add(childValue);
             }
             Consume(TokenType.RightAngle, "Expected '>'");
-            return new DtsPropertyValue(DtsPropertyValueType.Array, valueTemp);
-        }
-
-        private DtsPropertyValue ParseReference()
-        {
-            Consume(TokenType.Ampersand, "Expected '&'");
-            var refName = Consume(TokenType.Identifier, "Expected reference name").Value;
-            return new DtsPropertyValue(DtsPropertyValueType.Reference, "&" + refName);
+            return valueTemp;
         }
 
         private DtsValue ParseReferenceValue()
@@ -401,9 +409,11 @@ namespace DtsParser
             StringBuilder sb = new StringBuilder();
             while (!Check(TokenType.RightAngle))
             {
+                SkipNewlines();
                 var value = Advance().Value;
                 sb.Append(" ");
                 sb.Append(value);
+                SkipNewlines();
             }
             var dtsValue = new DtsStringValue(sb.ToString());
             return dtsValue;
@@ -427,6 +437,18 @@ namespace DtsParser
         {
             var stringValue = Consume(TokenType.String, "Expected string value").Value;
             return new DtsStringValue(stringValue);
+        }
+
+        private DtsValue ParseNumberValue()
+        {
+            var value = Convert.ToUInt64(Consume(TokenType.Number, "Expected number").Value);
+            return new DtsNumberValue(value);
+        }
+
+        private DtsValue ParseHexNumberValue()
+        {
+            var value = Convert.ToUInt64(Consume(TokenType.HexNumber, "Expected hex number").Value.Substring(2), 16);
+            return new DtsNumberValue(value, true);
         }
 
         private DtsExpression ParseExpression()
@@ -692,6 +714,10 @@ namespace DtsParser
 
         private Token Consume(TokenType type, string message)
         {
+            if (type != TokenType.Newline)
+            {
+                SkipNewlines();
+            }
             if (Check(type)) return Advance();
             throw new ParseException(message, Peek().Line);
         }
