@@ -11,8 +11,7 @@ namespace DtsParser
         Number,
         Reference,
         Array,
-        Bracket,
-        Expression  // 新增：复杂表达式
+        Bracket
     }
 
     public class DtsPropertyValue
@@ -30,8 +29,6 @@ namespace DtsParser
         {
             switch (Type)
             {
-                case DtsPropertyValueType.Expression:
-                    return ((DtsExpression)Value).ToString();
                 case DtsPropertyValueType.String:
                 case DtsPropertyValueType.Number:
                 case DtsPropertyValueType.Reference:
