@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System.Collections.Generic;
 
 namespace DtsParser
 {
@@ -9,16 +7,17 @@ namespace DtsParser
     /// </summary>
     public class DtsNode
     {
-        public string Name { get; set; }
-        public string Label { get; set; }  // 节点标签
-        public List<DtsProperty> Properties { get; set; }
-        public List<DtsNode> Children { get; set; }
+        public string Name { get; }
+        public string Label { get; }  // 节点标签
+        public List<DtsProperty> Properties { get; }
+        public List<DtsNode> Children { get; }
         public DtsNode Parent { get; set; }
-        public int Line { get; set; }
+        public int Line { get; }
 
-        public DtsNode(string name = null, string label = null)
+        public DtsNode(string name, int line, string label = null)
         {
             Name = name;
+            Line = line;
             Label = label;
             Properties = new List<DtsProperty>();
             Children = new List<DtsNode>();
@@ -73,7 +72,7 @@ namespace DtsParser
 
         public override string ToString()
         {
-            var labelPart = !string.IsNullOrEmpty(Label) ? $"{Label}: " : "";
+            var labelPart = !string.IsNullOrWhiteSpace(Label) ? $"{Label}: " : "";
             return $"{labelPart}{Name ?? ""}";
         }
     }

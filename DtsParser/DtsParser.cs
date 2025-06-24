@@ -153,6 +153,7 @@ namespace DtsParser
         private DtsNode ParseNode()
         {
             var name = "/";
+            string label = null;
 
             if (Check(TokenType.Slash))
             {
@@ -165,7 +166,8 @@ namespace DtsParser
                 if (Check(TokenType.Colon))
                 {
                     Advance(); // consume ':'
-                    name += ":" + Consume(TokenType.Identifier, "Expected identifier after ':'").Value;
+                    label = name;
+                    name = Consume(TokenType.Identifier, "Expected identifier after ':'").Value;
                 }
 
                 if (Check(TokenType.At))
@@ -175,7 +177,7 @@ namespace DtsParser
                 }
             }
 
-            var node = new DtsNode(name);
+            var node = new DtsNode(name, Peek().Line, label);
 
             Consume(TokenType.LeftBrace, "Expected '{' after node name");
             SkipNewlines();
