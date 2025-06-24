@@ -283,12 +283,29 @@ namespace DtsParser
                 Advance();
                 return ParsePropertyValue();
             }
+            else if (Check(TokenType.Bits) && PeekNext().Type == TokenType.Number)
+            {
+                return ParseBitsLineValue();
+            }
             else
             {
                 // 解析单个表达式
                 var expr = ParseExpression();
                 return new DtsPropertyValue(DtsPropertyValueType.Expression, expr);
             }
+        }
+
+        private DtsPropertyValue ParseBitsLineValue()
+        {
+            Consume(TokenType.Bits, "Expected 'bits'");
+            var valueTemp = new DtsArrayValue();
+            valueTemp.Values.Add(ParseBitsValue());
+            while (!Check(TokenType.Semicolon))
+            {
+                
+            }
+
+            return new DtsPropertyValue(DtsPropertyValueType.Array, valueTemp);
         }
 
         private DtsPropertyValue ParseString()
@@ -372,7 +389,7 @@ namespace DtsParser
             return new DtsPropertyValue(DtsPropertyValueType.Reference, "&" + refName);
         }
 
-        private DtsReferenceValue ParseReferenceValue()
+        private DtsValue ParseReferenceValue()
         {
             Consume(TokenType.Ampersand, "Expected '&'");
             var refName = Consume(TokenType.Identifier, "Expected reference name").Value;
@@ -390,6 +407,26 @@ namespace DtsParser
             }
             var dtsValue = new DtsStringValue(sb.ToString());
             return dtsValue;
+        }
+
+        private DtsValue ParseBitsValue()
+        {
+            var token = Advance();
+            if (token.Type == TokenType.Number &&
+                (token.Value == "8" || token.Value == "16" ||
+                token.Value == "32" || token.Value == "64"))
+            {
+                var value = Convert.ToUInt16(token.Value);
+                return new DtsBitsValue(value);
+            }
+            throw new ParseException("Expected number after /bits/: must be 8, 16, 32, or 64");
+
+        }
+
+        private DtsValue ParseStringValue()
+        {
+            var stringValue = Consume(TokenType.String, "Expected string value").Value;
+            return new DtsStringValue(stringValue);
         }
 
         private DtsExpression ParseExpression()

@@ -67,6 +67,10 @@ namespace DtsParser
                         // 多行注释
                         ScanBlockComment();
                     }
+                    else if (Match('b') || Match('B'))
+                    {
+                        ScanBits();
+                    }
                     else
                     {
                         AddToken(TokenType.Slash);
@@ -156,6 +160,17 @@ namespace DtsParser
                     }
                     break;
             }
+        }
+
+        private void ScanBits()
+        {
+            Advance();
+            while (Peek() != '/')
+            {
+                Advance();
+            }
+            Advance();
+            AddToken(TokenType.Bits);
         }
 
         private void ScanNumber()

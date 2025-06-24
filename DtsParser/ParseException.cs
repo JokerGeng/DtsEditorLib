@@ -11,6 +11,7 @@ namespace DtsParser
         public ParseException(string message, int line = 0) : base(message)
         {
             Line = line;
+            base.Source="Parse in "+ Line.ToString();
         }
     }
 }

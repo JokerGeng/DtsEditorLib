@@ -76,14 +76,36 @@
         /// @
         /// </summary>
         At,
-        // 位运算符和逻辑运算符
-        Pipe,                       // | (位或)
-        Caret,                      // ^ (位异或)
-        Tilde,                      // ~ (位取反)
-        LeftShift,                  // <<
-        RightShift,                 // >>
-        LogicalAnd,                 // &&
-        LogicalOr,                  // ||
+        /// <summary>
+        /// | (位或)
+        /// </summary>
+        Pipe,
+        /// <summary>
+        ///  ^ (位异或)
+        /// </summary>
+        Caret,
+        /// <summary>
+        /// ~ (位取反)
+        /// </summary>
+        Tilde,
+        /// <summary>
+        /// <<
+        /// </summary>
+        LeftShift,
+        /// <summary>
+        /// >>
+        /// </summary>
+        RightShift,                 
+        /// <summary>
+        /// &&
+        /// </summary>
+        LogicalAnd,                 
+        /// <summary>
+        /// ||
+        /// </summary>
+        LogicalOr,    
+
+        Bits,
 
         // 字面量
         Identifier, String, Number, HexNumber, Character,
