@@ -97,7 +97,7 @@ namespace DtsParser
                         nextToken?.Type == TokenType.At)
                     {
                         // 子节点
-                        var childNode= ParseNode();
+                        var childNode = ParseNode();
                         childNode.Parent = node;
                         node.AddChild(childNode);
                     }
@@ -171,6 +171,11 @@ namespace DtsParser
             {
                 return ParseReference();
             }
+            else if (Check(TokenType.Comment))
+            {
+                Advance();
+                return ParsePropertyValue();
+            }
             else
             {
                 // 解析单个表达式
@@ -188,7 +193,7 @@ namespace DtsParser
             {
                 var dtsArrayValue = new DtsArrayValue();
                 dtsArrayValue.Values.Add(new DtsStringValue(stringValue));
-                while (Check(TokenType.Semicolon)==false)
+                while (Check(TokenType.Semicolon) == false)
                 {
                     Consume(TokenType.Comma, "Expected ','");
                     var value = new DtsStringValue(Consume(TokenType.String, "Expected string value").Value);
@@ -233,6 +238,14 @@ namespace DtsParser
                     //identify
                     //ragard as string value
                     childValue = new DtsStringValue("");
+                    childValue = ParseMultiLine();
+                }
+                else if (Check(TokenType.Comment))
+                {
+                    //是否保存注释
+                    Advance();
+                    SkipNewlines();
+                    continue;
                 }
                 else
                 {
@@ -243,6 +256,19 @@ namespace DtsParser
             }
             Consume(TokenType.RightAngle, "Expected '>'");
             return new DtsPropertyValue(DtsPropertyValueType.Array, valueTemp);
+        }
+
+        private DtsValue ParseMultiLine()
+        {
+            StringBuilder sb = new StringBuilder();
+            while (!Check(TokenType.RightAngle))
+            {
+                var value = Advance().Value;
+                sb.Append(" ");
+                sb.Append(value);
+            }
+            var dtsValue = new DtsStringValue(sb.ToString());
+            return dtsValue;
         }
 
         private DtsReferenceValue ParseReferenceValue()
@@ -577,7 +603,11 @@ namespace DtsParser
             {
                 SkipNewlines();
                 //每一对<>一个值
-                values.Add(ParsePropertyValue());
+                var value = ParsePropertyValue();
+                if (value != null)
+                {
+                    values.Add(value);
+                }
                 SkipNewlines();
             }
             while (Match(TokenType.Comma));
