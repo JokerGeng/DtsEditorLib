@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Xml.Linq;
 
 namespace DtsParser
 {
@@ -12,7 +13,29 @@ namespace DtsParser
         /// <summary>
         /// 打印DTS节点树
         /// </summary>
-        public static void PrintTree(DtsNode node, int indent = 0)
+        public static void PrintTree(DtsDocument dtsDocument, int indent = 0)
+        {
+            var indentStr = new string(' ', indent * 2);
+            
+            //打印version
+            Console.WriteLine($"{indentStr}{dtsDocument.Version}");
+
+            foreach (var item in dtsDocument.Comments)
+            {
+                // 打印注释
+                Console.WriteLine($"{indentStr}{item}");
+            }
+
+            // 打印include
+            foreach (var include in dtsDocument.Includes)
+            {
+                Console.WriteLine($"{indentStr}  {include}");
+            }
+
+            PrintNode(dtsDocument.RootNode, indent);
+        }
+
+        public static void PrintNode(DtsNode node, int indent = 0)
         {
             var indentStr = new string(' ', indent * 2);
 
@@ -28,7 +51,7 @@ namespace DtsParser
             // 递归打印子节点
             foreach (var child in node.Children)
             {
-                PrintTree(child, indent + 1);
+                PrintNode(child, indent + 1);
             }
         }
 

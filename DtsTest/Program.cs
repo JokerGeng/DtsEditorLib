@@ -10,28 +10,26 @@ namespace DtsTest
         static void Main(string[] args)
         {
             // 示例1: 解析DTS文件
-            Console.WriteLine("=== 解析DTS文件 ===");
+            Console.WriteLine("=== Parse Start ===");
 
             var dtsContent = File.ReadAllText("example.dts");
 
             try
             {
                 // 词法分析
+                Console.WriteLine("=== Lexical Analysis ===");
                 var lexer = new DtsLexer(dtsContent);
                 var tokens = lexer.Tokenize();
 
-                Console.WriteLine("=== Lexical Analysis ===");
-                foreach (var token in tokens.Take(20)) // 显示前20个token
-                {
-                    Console.WriteLine(token);
-                }
-
                 // 语法分析
+                Console.WriteLine("=== Semantic Analysis ===");
                 var parser = new DtsParser.DtsParser(tokens);
                 var deviceTree = parser.ParseDocument();
 
-                Console.WriteLine("\n===DtsParser Parse Tree ===");
-                //DtsTreePrinter.PrintTree(deviceTree);
+                Console.WriteLine("=== Node Tree ===");
+                DtsTreePrinter.PrintTree(deviceTree);
+
+                Console.WriteLine("=== Parse end ===");
             }
             catch (Exception ex)
             {
