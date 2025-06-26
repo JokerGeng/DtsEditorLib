@@ -18,7 +18,7 @@ namespace DtsParser
 
         public override string ToString()
         {
-            return $"/bits/ {Value} {string.Join(",", Values.Select(t => $"<{t.ToString()}>"))}";
+            return $"/bits/ {Value} {string.Join(", ", Values.Select(t => t.ToString()))}";
         }
     }
 }

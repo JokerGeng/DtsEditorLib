@@ -18,6 +18,9 @@ namespace DtsParser
             IsHex = isHex;
         }
 
-        public override string ToString() => IsHex ? $"0x{Value:X}" : Value.ToString();
+        public override string ToString()
+        {
+            return IsHex ? $"0x{Value:X}" : Value.ToString();
+        }
     }
 }

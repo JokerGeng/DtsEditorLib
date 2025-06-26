@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Xml.Linq;
 
 namespace DtsParser
 {
@@ -201,7 +202,7 @@ namespace DtsParser
                         childNode.Parent = node;
                         node.AddChild(childNode);
                     }
-                    else if (nextToken?.Type == TokenType.Equals)
+                    else if (nextToken?.Type == TokenType.Equals || nextToken?.Type == TokenType.Comma)
                     {
                         // 属性
                         node.AddProperty(ParseProperty());
@@ -240,6 +241,19 @@ namespace DtsParser
         {
             var name = Consume(TokenType.Identifier, "Expected property name").Value;
             SkipNewlines();
+            while (!Check(TokenType.Equals))
+            {
+                Consume(TokenType.Comma, "Expected ',' after property name");
+                SkipNewlines();
+                var othName = Consume(TokenType.Identifier, "Expected property name after ','").Value;
+                name += "," + othName;
+                SkipNewlines();
+                if (Check(TokenType.Semicolon))
+                { 
+                    //no property value
+                    return new DtsProperty(name, new List<DtsPropertyValue>());
+                }
+            }
             Consume(TokenType.Equals, "Expected '=' after property name");
 
             var values = new List<DtsPropertyValue>();
@@ -306,11 +320,11 @@ namespace DtsParser
             while (!Check(TokenType.Semicolon))
             {
                 SkipNewlines();
-                var value = ParseCellArrayValue();
-                bitsValue.Values.AddRange(value.Values);
-                if (Peek().Type != TokenType.Comma)
+                DtsArrayValue value = ParseCellArrayValue();
+                bitsValue.Values.Add(value);
+                if (Peek().Type == TokenType.Comma)
                 {
-                    break;
+                    Consume(TokenType.Comma, "Expected ','");
                 }
                 SkipNewlines();
             }
