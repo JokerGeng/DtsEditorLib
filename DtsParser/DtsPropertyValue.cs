@@ -32,6 +32,7 @@ namespace DtsParser
                 case DtsPropertyValueType.Number:
                 case DtsPropertyValueType.Reference:
                 case DtsPropertyValueType.Bits:
+                case DtsPropertyValueType.Bracket:
                     return ((DtsValue)Value).ToString() ?? "";
                 case DtsPropertyValueType.Array:
                     var array = (DtsArrayValue)Value;

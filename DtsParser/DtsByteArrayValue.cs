@@ -13,7 +13,7 @@ namespace DtsParser
 
         public override string ToString()
         {
-            return $"[{string.Join(", ", Values.Select(t => t))}]";
+            return $"[{string.Join(" ", Values.Select(t => t))}]";
         }
     }
 }
