@@ -415,7 +415,7 @@ namespace DtsParser
             while (!Check(TokenType.RightBracket))
             {
                 SkipNewlines();
-                if (Check(TokenType.Number) || Check(TokenType.Identifier))
+                if (Check(TokenType.Number) || Check(TokenType.HexNumber) || Check(TokenType.Identifier))
                 {
                     var stringValue = Consume(Peek().Type, "Expected mac address value").Value;
                     valueTemp.Values.Add(stringValue);

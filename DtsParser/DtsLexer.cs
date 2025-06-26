@@ -101,7 +101,9 @@ namespace DtsParser
                         AddToken(TokenType.RightAngle); // >
                     }
                     break;
-                case '[': AddToken(TokenType.LeftBracket); break;
+                case '[':
+                    ScanByteArray();
+                    break;
                 case ']': AddToken(TokenType.RightBracket); break;
                 case ',': AddToken(TokenType.Comma); break;
                 case ';': AddToken(TokenType.Semicolon); break;
@@ -159,6 +161,26 @@ namespace DtsParser
                         throw new ParseException($"Unexpected character: {c}", _line);
                     }
                     break;
+            }
+        }
+
+        private void ScanByteArray()
+        {
+            AddToken(TokenType.LeftBracket);
+            _start = _current;
+            while (Peek() != ']')
+            {
+                if (Peek() == ' ')
+                {
+                    Advance();
+                }
+                else
+                {
+                    Advance();
+                    Advance();
+                    AddToken(TokenType.HexNumber);
+                }
+                _start = _current;
             }
         }
 
@@ -306,30 +328,6 @@ namespace DtsParser
             }
         }
 
-        // 辅助方法
-        private bool IsAtEnd() => _current >= _source.Length;
-        private char Advance() => _source[_current++];
-        private bool Match(char expected)
-        {
-            if (IsAtEnd()) return false;
-            if (_source[_current] != expected) return false;
-            _current++;
-            return true;
-        }
-        private char Peek() => IsAtEnd() ? '\0' : _source[_current];
-        private char PeekNext() => _current + 1 >= _source.Length ? '\0' : _source[_current + 1];
-        private bool IsDigit(char c) => c >= '0' && c <= '9';
-        private bool IsAlpha(char c) => (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_';
-        private bool IsAlphaNumeric(char c) => IsAlpha(c) || IsDigit(c);
-        private bool IsHexDigit(char c) => IsDigit(c) || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
-
-        private void AddToken(TokenType type, string text = null)
-        {
-            text = text ?? _source.Substring(_start, _current - _start);
-            _tokens.Add(new Token(type, text, _line, _column));
-            _column += text.Length;
-        }
-
         private void ScanString()
         {
             while (Peek() != '"' && !IsAtEnd())
@@ -389,5 +387,30 @@ namespace DtsParser
             }
             AddToken(TokenType.Comment);
         }
+
+        // 辅助方法
+        private bool IsAtEnd() => _current >= _source.Length;
+        private char Advance() => _source[_current++];
+        private bool Match(char expected)
+        {
+            if (IsAtEnd()) return false;
+            if (_source[_current] != expected) return false;
+            _current++;
+            return true;
+        }
+        private char Peek() => IsAtEnd() ? '\0' : _source[_current];
+        private char PeekNext() => _current + 1 >= _source.Length ? '\0' : _source[_current + 1];
+        private bool IsDigit(char c) => c >= '0' && c <= '9';
+        private bool IsAlpha(char c) => (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_';
+        private bool IsAlphaNumeric(char c) => IsAlpha(c) || IsDigit(c);
+        private bool IsHexDigit(char c) => IsDigit(c) || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
+
+        private void AddToken(TokenType type, string text = null)
+        {
+            text = text ?? _source.Substring(_start, _current - _start);
+            _tokens.Add(new Token(type, text, _line, _column));
+            _column += text.Length;
+        }
+
     }
 }
