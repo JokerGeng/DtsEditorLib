@@ -302,30 +302,29 @@ namespace DtsParser
         private DtsPropertyValue ParseBitsLineValue()
         {
             Consume(TokenType.Bits, "Expected 'bits'");
-            var valueTemp = new DtsArrayValue();
-            valueTemp.Values.Add(ParseBitsValue());
+            DtsBitsValue bitsValue = ParseBitsValue();
             while (!Check(TokenType.Semicolon))
             {
                 SkipNewlines();
                 var value = ParseCellArrayValue();
-                valueTemp.Values.AddRange(value.Values);
+                bitsValue.Values.AddRange(value.Values);
                 if (Peek().Type != TokenType.Comma)
                 {
                     break;
                 }
                 SkipNewlines();
             }
-            return new DtsPropertyValue(DtsPropertyValueType.Array, valueTemp);
+            return new DtsPropertyValue(DtsPropertyValueType.Bits, bitsValue);
         }
 
         private DtsPropertyValue ParseString()
         {
             SkipNewlines();
             var stringValue = Consume(TokenType.String, "Expected string value").Value;
-            DtsPropertyValue dtsPropertyValue = new DtsPropertyValue(DtsPropertyValueType.String, stringValue);
+            DtsPropertyValue dtsPropertyValue = new DtsPropertyValue(DtsPropertyValueType.String, new DtsStringValue(stringValue));
             if (Peek().Type == TokenType.Comma)
             {
-                var dtsArrayValue = new DtsArrayValue();
+                var dtsArrayValue = new DtsArrayStringValue();
                 dtsArrayValue.Values.Add(new DtsStringValue(stringValue));
                 while (Check(TokenType.Semicolon) == false)
                 {
@@ -335,7 +334,7 @@ namespace DtsParser
                     dtsArrayValue.Values.Add(value);
                     SkipNewlines();
                 }
-                dtsPropertyValue = new DtsPropertyValue(DtsPropertyValueType.Array, dtsArrayValue);
+                dtsPropertyValue = new DtsPropertyValue(DtsPropertyValueType.List, dtsArrayValue);
             }
             return dtsPropertyValue;
         }
@@ -367,7 +366,7 @@ namespace DtsParser
                 DtsValue childValue;
                 if (Check(TokenType.String))
                 {
-                    childValue = ParseStringValue();
+                    childValue = ParseCellStringValue();
                 }
                 else if (Check(TokenType.Ampersand))
                 {
@@ -385,7 +384,6 @@ namespace DtsParser
                 {
                     //identify
                     //ragard as string value
-                    childValue = new DtsStringValue("");
                     childValue = ParseMultiLine();
                 }
                 else if (Check(TokenType.Comment))
@@ -432,6 +430,20 @@ namespace DtsParser
             return valueTemp;
         }
 
+        private DtsBitsValue ParseBitsValue()
+        {
+            var token = Advance();
+            if (token.Type == TokenType.Number &&
+                (token.Value == "8" || token.Value == "16" ||
+                token.Value == "32" || token.Value == "64"))
+            {
+                var value = Convert.ToUInt16(token.Value);
+                return new DtsBitsValue(value);
+            }
+            throw new ParseException("Expected number after /bits/: must be 8, 16, 32, or 64");
+
+        }
+
         private DtsValue ParseReferenceValue()
         {
             Consume(TokenType.Ampersand, "Expected '&'");
@@ -450,28 +462,20 @@ namespace DtsParser
                 sb.Append(value);
                 SkipNewlines();
             }
-            var dtsValue = new DtsStringValue(sb.ToString());
+            var dtsValue = new DtsCellStringValue(sb.ToString());
             return dtsValue;
-        }
-
-        private DtsValue ParseBitsValue()
-        {
-            var token = Advance();
-            if (token.Type == TokenType.Number &&
-                (token.Value == "8" || token.Value == "16" ||
-                token.Value == "32" || token.Value == "64"))
-            {
-                var value = Convert.ToUInt16(token.Value);
-                return new DtsBitsValue(value);
-            }
-            throw new ParseException("Expected number after /bits/: must be 8, 16, 32, or 64");
-
         }
 
         private DtsValue ParseStringValue()
         {
             var stringValue = Consume(TokenType.String, "Expected string value").Value;
             return new DtsStringValue(stringValue);
+        }
+
+        private DtsValue ParseCellStringValue()
+        {
+            var stringValue = Consume(TokenType.String, "Expected string value").Value;
+            return new DtsCellStringValue(stringValue);
         }
 
         private DtsValue ParseNumberValue()

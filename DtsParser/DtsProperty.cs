@@ -1,6 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System.Collections.Generic;
+using System.Linq;
 
 namespace DtsParser
 {
@@ -10,7 +9,7 @@ namespace DtsParser
     public class DtsProperty
     {
         public string Name { get; set; }
-        public DtsValue Value { get; set; }
+        ///<> list
         public List<DtsPropertyValue> Values { get; set; }
         public int Line { get; set; }
 
@@ -21,16 +20,13 @@ namespace DtsParser
             Line = line;
         }
 
-        public DtsProperty(string name, DtsValue value = null, int line = 0)
+        public string ToString(string indent)
         {
-            Name = name;
-            Value = value;
-            Line = line;
+            return Values?.Count > 0! ? $"{Name} = {string.Join($",\r{indent}", Values.Select(t => t.ToString()))};" : $"{Name};";
         }
-
         public override string ToString()
         {
-            return Value != null ? $"{Name} = {Value};" : $"{Name};";
+            return Values?.Count > 0! ? $"{Name} = {string.Join(",\r", Values.Select(t => t.ToString()))};" : $"{Name};";
         }
     }
 

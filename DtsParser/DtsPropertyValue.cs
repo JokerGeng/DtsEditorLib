@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using System.Linq;
 
 namespace DtsParser
 {
@@ -11,6 +8,8 @@ namespace DtsParser
         Number,
         Reference,
         Array,
+        List,
+        Bits,
         Bracket
     }
 
@@ -32,10 +31,14 @@ namespace DtsParser
                 case DtsPropertyValueType.String:
                 case DtsPropertyValueType.Number:
                 case DtsPropertyValueType.Reference:
-                    return Value?.ToString() ?? "";
+                case DtsPropertyValueType.Bits:
+                    return ((DtsValue)Value).ToString() ?? "";
                 case DtsPropertyValueType.Array:
-                    var array = (List<DtsPropertyValue>)Value;
-                    return $"<{string.Join(" ", array.Select(v => v.ToString()))}>";
+                    var array = (DtsArrayValue)Value;
+                    return $"<{string.Join(" ", array.Values.Select(v => v.ToString()))}>";
+                case DtsPropertyValueType.List:
+                    var list = (DtsArrayStringValue)Value;
+                    return list.ToString();
                 default:
                     return Value?.ToString() ?? "";
             }

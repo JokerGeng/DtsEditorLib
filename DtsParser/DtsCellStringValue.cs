@@ -4,21 +4,18 @@ using System.Text;
 
 namespace DtsParser
 {
-    /// <summary>
-    /// 字符串值
-    /// </summary>
-    public class DtsStringValue : DtsValue
+    public class DtsCellStringValue : DtsValue
     {
-        public string Value { get;}
+        public string Value { get; }
 
-        public DtsStringValue(string value)
+        public DtsCellStringValue(string value)
         {
             Value = value;
         }
 
         public override string ToString()
         {
-            return $"\"{Value}\"";
+            return $"{Value}";
         }
     }
 }

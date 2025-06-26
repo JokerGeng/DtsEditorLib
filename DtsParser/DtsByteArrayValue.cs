@@ -1,6 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System.Collections.Generic;
+using System.Linq;
 
 namespace DtsParser
 {
@@ -14,7 +13,7 @@ namespace DtsParser
 
         public override string ToString()
         {
-            return $"[{string.Join(", ", Values)}]";
+            return $"[{string.Join(", ", Values.Select(t => t))}]";
         }
     }
 }

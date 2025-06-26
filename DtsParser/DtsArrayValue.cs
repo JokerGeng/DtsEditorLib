@@ -5,7 +5,7 @@ using System.Text;
 namespace DtsParser
 {
     /// <summary>
-    /// 数组值<>
+    /// 数组值<val...>,[val1...]
     /// </summary>
     public class DtsArrayValue : DtsValue
     {
@@ -18,7 +18,7 @@ namespace DtsParser
 
         public override string ToString()
         {
-            return $"<{string.Join(", ", Values)}>";
+            return $"<{string.Join(" ", Values)}>";
         }
     }
 

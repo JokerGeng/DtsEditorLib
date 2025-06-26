@@ -20,33 +20,5 @@ namespace DtsParser
         {
             Includes.Add(include);
         }
-
-        public override string ToString()
-        {
-            var sb = new StringBuilder();
-
-            if (!string.IsNullOrEmpty(Version))
-            {
-                sb.AppendLine(Version);
-                sb.AppendLine();
-            }
-
-            foreach (var include in Includes)
-            {
-                sb.AppendLine(include.ToString());
-            }
-
-            if (Includes.Count > 0)
-            {
-                sb.AppendLine();
-            }
-
-            if (RootNode != null)
-            {
-                sb.Append(RootNode.ToString());
-            }
-
-            return sb.ToString();
-        }
     }
 }
