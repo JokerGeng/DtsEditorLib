@@ -19,7 +19,7 @@ namespace DtsParser
         {
             var sb = new StringBuilder();
 
-            // 添加文件头注释
+            // generate comment
             if (dtsDocument.Comments.Any())
             {
                 foreach (var comment in dtsDocument.Comments)
@@ -29,20 +29,23 @@ namespace DtsParser
                 sb.AppendLine();
             }
 
-            // 生成版本声明
-            sb.AppendLine(dtsDocument.Version);
-            sb.AppendLine();
-
-            // 生成包含文件
-            foreach (var include in dtsDocument.Includes)
+            // generate version
+            if(!string.IsNullOrWhiteSpace(dtsDocument.Version))
             {
-                sb.AppendLine(include.ToString());
+                sb.AppendLine(dtsDocument.Version);
             }
 
+            // generate include
             if (dtsDocument.Includes.Any())
+            {
+                foreach (var include in dtsDocument.Includes)
+                {
+                    sb.AppendLine(include.ToString());
+                }
                 sb.AppendLine();
+            }
 
-            // 生成根节点
+            // generate root node
             GenerateNode(sb, dtsDocument.RootNode, true);
 
             return sb.ToString();
@@ -64,33 +67,32 @@ namespace DtsParser
 
             if (!isRoot)
             {
-                // 添加节点标签
                 var indent = GetIndent(indentLevel);
-                // 添加节点名称、标签和单元地址
+                //generate node、label and address
                 sb.Append($"{indent}{node.ToString()}");
                 sb.AppendLine(" {");
                 indentLevel++;
             }
 
-            // 生成属性
+            // generate property
             foreach (var property in node.Properties)
             {
                 GenerateProperty(sb, property);
             }
 
-            // 添加子节点之间的空行
+            // add new line between property and child node
             if (node.Properties.Any() && node.Children.Any())
             {
                 sb.AppendLine();
             }
 
-            // 生成子节点
+            // generate childe node
             var childNodes = node.Children;
             for (int i = 0; i < childNodes.Count; i++)
             {
                 GenerateNode(sb, childNodes[i]);
 
-                // 在子节点之间添加空行
+                // add new line between child node
                 if (i < childNodes.Count - 1)
                 {
                     sb.AppendLine();
