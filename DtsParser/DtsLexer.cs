@@ -55,7 +55,7 @@ namespace DtsParser
                 case '/':
                     if (Match('/'))
                     {
-                        // 单行注释
+                        // single comment
                         while (Peek() != '\n' && !IsAtEnd())
                         {
                             Advance();
@@ -64,7 +64,7 @@ namespace DtsParser
                     }
                     else if (Match('*'))
                     {
-                        // 多行注释
+                        // multi comment
                         ScanBlockComment();
                     }
                     else if (Match('b') || Match('B'))
@@ -173,13 +173,13 @@ namespace DtsParser
                 if (Peek() == ' ')
                 {
                     Advance();
+                    _start = _current;
                 }
-                else
+                while (Peek() != ' ' && Peek() != ']')
                 {
                     Advance();
-                    Advance();
-                    AddToken(TokenType.HexNumber);
                 }
+                AddToken(TokenType.HexNumber);
                 _start = _current;
             }
         }
@@ -388,7 +388,7 @@ namespace DtsParser
             AddToken(TokenType.Comment);
         }
 
-        // 辅助方法
+        
         private bool IsAtEnd() => _current >= _source.Length;
         private char Advance() => _source[_current++];
         private bool Match(char expected)
