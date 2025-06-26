@@ -255,7 +255,7 @@ namespace DtsParser
             }
             Consume(TokenType.Equals, "Expected '=' after property name");
 
-            var values = new List<DtsPropertyValue>();
+            var values = new List<DtsValue>();
 
             // Skip newlines after '='
             SkipNewlines();
@@ -280,7 +280,7 @@ namespace DtsParser
             return property;
         }
 
-        private DtsPropertyValue ParsePropertyValue()
+        private DtsValue ParsePropertyValue()
         {
             SkipNewlines();
             if (Check(TokenType.String))
@@ -289,11 +289,11 @@ namespace DtsParser
             }
             else if (Check(TokenType.LeftAngle))
             {
-                return ParseCellArray();
+                return ParseCellArrayValue();
             }
             else if (Check(TokenType.Ampersand))
             {
-                return ParseReference();
+                return ParseReferenceValue();
             }
             else if (Check(TokenType.Comment))
             {
@@ -306,7 +306,7 @@ namespace DtsParser
             }
             else if (Check(TokenType.LeftBracket))
             {
-                return ParseBracket();
+                return ParseBracketValue();
             }
             else
             {
@@ -314,7 +314,7 @@ namespace DtsParser
             }
         }
 
-        private DtsPropertyValue ParseBitsLineValue()
+        private DtsValue ParseBitsLineValue()
         {
             Consume(TokenType.Bits, "Expected 'bits'");
             DtsBitsValue bitsValue = ParseBitsValue();
@@ -329,18 +329,19 @@ namespace DtsParser
                 }
                 SkipNewlines();
             }
-            return new DtsPropertyValue(DtsPropertyValueType.Bits, bitsValue);
+            return bitsValue;
         }
 
-        private DtsPropertyValue ParseString()
+        private DtsValue ParseString()
         {
             SkipNewlines();
-            var stringValue = Consume(TokenType.String, "Expected string value").Value;
-            DtsPropertyValue dtsPropertyValue = new DtsPropertyValue(DtsPropertyValueType.String, new DtsStringValue(stringValue));
+            var valueStr = Consume(TokenType.String, "Expected string value").Value;
+            DtsValue stringValue;
+            stringValue = new DtsStringValue(valueStr);
             if (Peek().Type == TokenType.Comma)
             {
                 var dtsArrayValue = new DtsArrayStringValue();
-                dtsArrayValue.Values.Add(new DtsStringValue(stringValue));
+                dtsArrayValue.Values.Add(new DtsStringValue(valueStr));
                 while (Check(TokenType.Semicolon) == false)
                 {
                     SkipNewlines();
@@ -349,24 +350,9 @@ namespace DtsParser
                     dtsArrayValue.Values.Add(value);
                     SkipNewlines();
                 }
-                dtsPropertyValue = new DtsPropertyValue(DtsPropertyValueType.List, dtsArrayValue);
+                stringValue = dtsArrayValue;
             }
-            return dtsPropertyValue;
-        }
-
-        private DtsPropertyValue ParseCellArray()
-        {
-            return new DtsPropertyValue(DtsPropertyValueType.Array, ParseCellArrayValue());
-        }
-
-        private DtsPropertyValue ParseReference()
-        {
-            return new DtsPropertyValue(DtsPropertyValueType.Reference, ParseReferenceValue());
-        }
-
-        private DtsPropertyValue ParseBracket()
-        {
-            return new DtsPropertyValue(DtsPropertyValueType.Bracket, ParseBracketValue());
+            return stringValue;
         }
 
         private DtsArrayValue ParseCellArrayValue()

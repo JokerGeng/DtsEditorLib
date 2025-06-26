@@ -72,7 +72,7 @@ namespace DtsParser
 
         public override string ToString()
         {
-            var labelPart = !string.IsNullOrWhiteSpace(Label) ? $"{Label}: " : "";
+            var labelPart = !string.IsNullOrWhiteSpace(Label) ? $"{Label}:" : "";
             return $"{labelPart}{Name ?? ""}";
         }
     }

@@ -3,11 +3,11 @@ using System.Linq;
 
 namespace DtsParser
 {
-    /// <summary>
-    /// 序列值<>,<>
-    /// </summary>
     public class DtsArrayStringValue : DtsValue
     {
+        /// <summary>
+        /// main bearing <see cref="DtsStringValue"/>
+        /// </summary>
         public List<DtsValue> Values { get; }
 
         public DtsArrayStringValue()

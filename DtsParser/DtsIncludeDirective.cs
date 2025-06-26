@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace DtsParser
 {
@@ -21,9 +19,7 @@ namespace DtsParser
 
         public override string ToString()
         {
-            return IsSystemInclude
-                ? $"#include <{Path}>"
-                : $"#include \"{Path}\"";
+            return IsSystemInclude ? $"#include <{Path}>" : $"#include \"{Path}\"";
         }
     }
 }

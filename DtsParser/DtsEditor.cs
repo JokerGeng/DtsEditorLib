@@ -36,7 +36,7 @@ namespace DtsParser
             return true;
         }
 
-        public void AddProperty(string nodePath, string propertyName, List<DtsPropertyValue> values)
+        public void AddProperty(string nodePath, string propertyName, List<DtsValue> values)
         {
             var node = deviceTree.FindByPath(nodePath);
             if (node == null)
