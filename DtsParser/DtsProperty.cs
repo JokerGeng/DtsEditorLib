@@ -10,14 +10,13 @@ namespace DtsParser
     {
         public string Name { get; set; }
         ///<> list
-        public List<DtsPropertyValue> Values { get; set; }
+        public List<DtsPropertyValue> Values { get; }
         public int Line { get; set; }
 
-        public DtsProperty(string name, List<DtsPropertyValue> values, int line = 0)
+        public DtsProperty(string name)
         {
             Name = name;
-            Values = values;
-            Line = line;
+            this.Values = new List<DtsPropertyValue>();
         }
 
         public string ToString(string indent)

@@ -2,8 +2,21 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace DtsEditorLib.Models
+namespace DtsParser
 {
+    public enum DiffType
+    {
+        Added,
+        Removed,
+        Modified,
+        Unchanged,
+        NodeAdded,
+        NodeRemoved,
+        PropertyAdded,
+        PropertyRemoved,
+        PropertyModified
+    }
+
     public class DeviceTreeDiff
     {
         public DiffType Type { get; set; }

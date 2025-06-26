@@ -2,17 +2,6 @@
 
 namespace DtsParser
 {
-    public enum DtsPropertyValueType
-    {
-        String,
-        Number,
-        Reference,
-        Array,
-        List,
-        Bits,
-        Bracket
-    }
-
     public class DtsPropertyValue
     {
         public DtsPropertyValueType Type { get; }

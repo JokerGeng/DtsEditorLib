@@ -2,9 +2,8 @@
 using System.Collections.Generic;
 using System.Text;
 using System.Text.RegularExpressions;
-using DtsEditorLib.Models;
 
-namespace DtsEditorLib.Validator
+namespace DtsParser
 {
     // 节点名称规则
     public class NodeNameRule : IValidationRule
@@ -12,7 +11,7 @@ namespace DtsEditorLib.Validator
         public string Name => "NodeName";
         private static readonly Regex ValidNameRegex = new Regex(@"^[a-zA-Z0-9][a-zA-Z0-9_.-]*$");
 
-        public void Validate(DeviceTreeNode node, DeviceTree deviceTree, List<ValidationResult> results)
+        public void Validate(DtsNode node, DtsDocument deviceTree, List<ValidationResult> results)
         {
             if (node.Name == "/" || string.IsNullOrEmpty(node.Name))
                 return;
@@ -23,8 +22,8 @@ namespace DtsEditorLib.Validator
                 {
                     Severity = ValidationSeverity.Error,
                     Message = $"Invalid node name '{node.Name}'. Node names must start with alphanumeric and contain only alphanumeric, underscore, dot, or hyphen.",
-                    NodePath = node.FullPath,
-                    LineNumber = node.LineNumber,
+                    NodePath = node.GetPath(),
+                    LineNumber = node.Line,
                     RuleName = Name
                 });
             }

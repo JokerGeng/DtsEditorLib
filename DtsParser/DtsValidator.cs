@@ -1,28 +1,27 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using DtsEditorLib.Models;
 
-namespace DtsEditorLib.Validator
+namespace DtsParser
 {
-    public class DeviceTreeValidator
+    public class DtsValidator
     {
         private readonly List<ValidationResult> results = new List<ValidationResult>();
         private readonly Dictionary<string, IValidationRule> rules = new Dictionary<string, IValidationRule>();
 
-        public DeviceTreeValidator()
+        public DtsValidator()
         {
             InitializeStandardRules();
         }
 
-        public List<ValidationResult> Validate(DeviceTree deviceTree)
+        public List<ValidationResult> Validate(DtsDocument deviceTree)
         {
             results.Clear();
-            ValidateNode(deviceTree.Root, deviceTree);
+            ValidateNode(deviceTree.RootNode, deviceTree);
             return new List<ValidationResult>(results);
         }
 
-        private void ValidateNode(DeviceTreeNode node, DeviceTree deviceTree)
+        private void ValidateNode(DtsNode node, DtsDocument deviceTree)
         {
             // 应用所有规则
             foreach (var rule in rules.Values)
@@ -40,11 +39,6 @@ namespace DtsEditorLib.Validator
         private void InitializeStandardRules()
         {
             AddRule(new NodeNameRule());
-            AddRule(new RequiredPropertiesRule());
-            AddRule(new PropertyTypeRule());
-            AddRule(new ReferenceValidationRule());
-            AddRule(new AddressCellsRule());
-            AddRule(new CompatibleStringRule());
         }
 
         public void AddRule(IValidationRule rule)

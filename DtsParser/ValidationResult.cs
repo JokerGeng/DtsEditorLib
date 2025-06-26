@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace DtsEditorLib.Models
+namespace DtsParser
 {
     public class ValidationResult
     {

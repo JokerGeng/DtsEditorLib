@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using System.Xml.Linq;
 
 namespace DtsParser
 {
@@ -211,7 +210,7 @@ namespace DtsParser
                     {
                         // 可能是没有值的属性
                         var propName = Advance().Value;
-                        node.AddProperty(new DtsProperty(propName, new List<DtsPropertyValue>()));
+                        node.AddProperty(new DtsProperty(propName));
 
                         if (Check(TokenType.Semicolon))
                         {
@@ -249,9 +248,9 @@ namespace DtsParser
                 name += "," + othName;
                 SkipNewlines();
                 if (Check(TokenType.Semicolon))
-                { 
+                {
                     //no property value
-                    return new DtsProperty(name, new List<DtsPropertyValue>());
+                    return new DtsProperty(name);
                 }
             }
             Consume(TokenType.Equals, "Expected '=' after property name");
@@ -276,7 +275,9 @@ namespace DtsParser
 
             Consume(TokenType.Semicolon, "Expected ';' after property");
 
-            return new DtsProperty(name, values);
+            var property = new DtsProperty(name);
+            property.Values.AddRange(values);
+            return property;
         }
 
         private DtsPropertyValue ParsePropertyValue()

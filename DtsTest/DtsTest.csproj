@@ -6,7 +6,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\DotNet.DTS\DotNet.DTS.csproj" />
     <ProjectReference Include="..\DtsParser\DtsParser.csproj" />
   </ItemGroup>
 

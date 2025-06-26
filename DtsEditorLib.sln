@@ -3,13 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.13.35913.81
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DtsEditorLib", "DtsEditorLib\DtsEditorLib.csproj", "{60441ACA-EA53-4913-B498-B9FD014860FF}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DtsTest", "DtsTest\DtsTest.csproj", "{1552FE85-E3D7-4EE6-B6B8-A7E08FB5CB05}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DtsParser", "DtsParser\DtsParser.csproj", "{911C9ACC-2D53-4076-9FCF-6B82199F7F19}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DotNet.DTS", "DotNet.DTS\DotNet.DTS.csproj", "{E559E463-E8BB-4AE5-AA73-82BD581751C6}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -17,10 +13,6 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{60441ACA-EA53-4913-B498-B9FD014860FF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{60441ACA-EA53-4913-B498-B9FD014860FF}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{60441ACA-EA53-4913-B498-B9FD014860FF}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{60441ACA-EA53-4913-B498-B9FD014860FF}.Release|Any CPU.Build.0 = Release|Any CPU
 		{1552FE85-E3D7-4EE6-B6B8-A7E08FB5CB05}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{1552FE85-E3D7-4EE6-B6B8-A7E08FB5CB05}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1552FE85-E3D7-4EE6-B6B8-A7E08FB5CB05}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -29,10 +21,6 @@ Global
 		{911C9ACC-2D53-4076-9FCF-6B82199F7F19}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{911C9ACC-2D53-4076-9FCF-6B82199F7F19}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{911C9ACC-2D53-4076-9FCF-6B82199F7F19}.Release|Any CPU.Build.0 = Release|Any CPU
-		{E559E463-E8BB-4AE5-AA73-82BD581751C6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{E559E463-E8BB-4AE5-AA73-82BD581751C6}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{E559E463-E8BB-4AE5-AA73-82BD581751C6}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{E559E463-E8BB-4AE5-AA73-82BD581751C6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
