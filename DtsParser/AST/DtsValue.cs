@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace DtsParser
+namespace DtsParser.AST
 {
     /// <summary>
     /// dts属性值的基类

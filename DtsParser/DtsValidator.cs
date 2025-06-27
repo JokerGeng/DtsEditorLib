@@ -1,6 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using DtsParser.AST;
+using DtsParser.Models;
+using DtsParser.Validator;
 
 namespace DtsParser
 {

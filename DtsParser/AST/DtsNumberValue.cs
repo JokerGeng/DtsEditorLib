@@ -1,18 +1,18 @@
 ﻿using System;
 
-namespace DtsParser
+namespace DtsParser.AST
 {
     /// <summary>
     /// 数字值
     /// </summary>
     public class DtsNumberValue : DtsValue
     {
-        public UInt64 Value { get; }
+        public ulong Value { get; }
         public bool IsHex { get; }
 
         public int Length { get; }
 
-        public DtsNumberValue(UInt64 value, bool isHex = false, int length = -1)
+        public DtsNumberValue(ulong value, bool isHex = false, int length = -1)
         {
             Value = value;
             IsHex = isHex;

@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace DtsParser
+namespace DtsParser.Models
 {
     public class DtsIncludeDirective
     {

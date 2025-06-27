@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace DtsParser
+namespace DtsParser.Validator
 {
     // 验证结果
     public enum ValidationSeverity

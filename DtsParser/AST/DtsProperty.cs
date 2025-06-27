@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 
-namespace DtsParser
+namespace DtsParser.AST
 {
     /// <summary>
     /// DTS属性
@@ -15,7 +15,7 @@ namespace DtsParser
         public DtsProperty(string name)
         {
             Name = name;
-            this.Values = new List<DtsValue>();
+            Values = new List<DtsValue>();
         }
 
         public string ToString(string indent)

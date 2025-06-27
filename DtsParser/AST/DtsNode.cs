@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace DtsParser
+namespace DtsParser.AST
 {
     /// <summary>
     /// DTS节点

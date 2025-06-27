@@ -1,8 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using DtsParser.AST;
 
-namespace DtsParser
+namespace DtsParser.Models
 {
     public class DtsDocument
     {

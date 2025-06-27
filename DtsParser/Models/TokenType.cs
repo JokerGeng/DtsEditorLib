@@ -1,4 +1,4 @@
-﻿namespace DtsParser
+﻿namespace DtsParser.Models
 {
     // Token类型枚举
     public enum TokenType

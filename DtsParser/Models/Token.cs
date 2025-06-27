@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace DtsParser
+namespace DtsParser.Models
 {
     // Token结构
     public class Token

@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 
-namespace DtsParser
+namespace DtsParser.AST
 {
     //[val1...]
     public class DtsByteArrayValue : DtsValue

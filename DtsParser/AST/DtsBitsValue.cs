@@ -2,15 +2,15 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace DtsParser
+namespace DtsParser.AST
 {
     public class DtsBitsValue : DtsValue
     {
-        public UInt16 Value { get; }
+        public ushort Value { get; }
 
         public List<DtsValue> Values { get; }
 
-        public DtsBitsValue(UInt16 value)
+        public DtsBitsValue(ushort value)
         {
             Value = value;
             Values = new List<DtsValue>();

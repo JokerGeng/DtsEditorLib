@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 
-namespace DtsParser
+namespace DtsParser.AST
 {
     public class DtsArrayStringValue : DtsValue
     {
@@ -12,7 +12,7 @@ namespace DtsParser
 
         public DtsArrayStringValue()
         {
-            this.Values = new List<DtsValue>();
+            Values = new List<DtsValue>();
         }
         public override string ToString()
         {

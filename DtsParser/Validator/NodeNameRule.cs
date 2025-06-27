@@ -2,8 +2,10 @@
 using System.Collections.Generic;
 using System.Text;
 using System.Text.RegularExpressions;
+using DtsParser.AST;
+using DtsParser.Models;
 
-namespace DtsParser
+namespace DtsParser.Validator
 {
     // 节点名称规则
     public class NodeNameRule : IValidationRule

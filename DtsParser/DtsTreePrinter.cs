@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Text;
 using System.Xml.Linq;
+using DtsParser.AST;
+using DtsParser.Models;
 
 namespace DtsParser
 {

@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using DtsParser.AST;
+using DtsParser.Models;
 
 namespace DtsParser
 {
