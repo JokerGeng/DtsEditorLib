@@ -344,7 +344,7 @@ namespace DtsParser
             return stringValue;
         }
 
-        private DtsArrayValue ParseCellArrayValue()
+        private DtsValue ParseCellArrayValue()
         {
             Consume(TokenType.LeftAngle, "Expected '<'");
 
@@ -390,7 +390,7 @@ namespace DtsParser
             return valueTemp;
         }
 
-        private DtsBitsValue ParseBitsValue()
+        private DtsValue ParseBitsValue()
         {
             var token = Advance();
             if (token.Type == TokenType.Number &&
@@ -414,11 +414,11 @@ namespace DtsParser
         private DtsValue ParseBitsLineValue()
         {
             Consume(TokenType.Bits, "Expected 'bits'");
-            DtsBitsValue bitsValue = ParseBitsValue();
+            DtsBitsValue bitsValue = (DtsBitsValue)ParseBitsValue();
             while (!Check(TokenType.Semicolon))
             {
                 SkipNewlines();
-                DtsArrayValue value = ParseCellArrayValue();
+                var value = ParseCellArrayValue();
                 bitsValue.Values.Add(value);
                 if (Peek().Type == TokenType.Comma)
                 {
@@ -431,7 +431,7 @@ namespace DtsParser
 
         //mac-address property
         // byte array
-        private DtsByteArrayValue ParseBracketValue()
+        private DtsValue ParseBracketValue()
         {
             Consume(TokenType.LeftBracket, "Expected '['");
 
@@ -455,7 +455,6 @@ namespace DtsParser
             return valueTemp;
         }
 
-
         private DtsValue ParseMultiLine()
         {
             StringBuilder sb = new StringBuilder();
@@ -476,7 +475,6 @@ namespace DtsParser
             var stringValue = Consume(TokenType.String, "Expected string value").Value;
             return new DtsStringValue(stringValue);
         }
-
 
         private DtsValue ParseNumberValue()
         {
