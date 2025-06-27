@@ -68,9 +68,13 @@ namespace DtsParser
                         // multi comment
                         ScanBlockComment();
                     }
-                    else if (Match('b') || Match('B'))
+                    else if (Match('b'))
                     {
-                        ScanBits();
+                        Scanbits();
+                    }
+                    else if (Match('m'))
+                    {
+                        Scanmemreserve();
                     }
                     else
                     {
@@ -185,7 +189,7 @@ namespace DtsParser
             }
         }
 
-        private void ScanBits()
+        private void Scanbits()
         {
             Advance();
             while (Peek() != '/')
@@ -194,6 +198,17 @@ namespace DtsParser
             }
             Advance();
             AddToken(TokenType.Bits);
+        }
+
+        private void Scanmemreserve()
+        {
+            Advance();
+            while (Peek() != '/')
+            {
+                Advance();
+            }
+            Advance();
+            AddToken(TokenType.Memreserve);
         }
 
         private void ScanNumber()

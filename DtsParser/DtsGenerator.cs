@@ -21,20 +21,18 @@ namespace DtsParser
         {
             var sb = new StringBuilder();
 
-            // generate comment
-            if (dtsDocument.Comments.Any())
+            // generate version
+            if (!string.IsNullOrWhiteSpace(dtsDocument.Version))
             {
-                foreach (var comment in dtsDocument.Comments)
-                {
-                    sb.AppendLine(comment);
-                }
+                sb.AppendLine(dtsDocument.Version);
                 sb.AppendLine();
             }
 
-            // generate version
-            if(!string.IsNullOrWhiteSpace(dtsDocument.Version))
+            //generate memreserve
+            if (dtsDocument.Dtsmemreserve != null)
             {
-                sb.AppendLine(dtsDocument.Version);
+                sb.AppendLine(dtsDocument.Dtsmemreserve.ToString());
+                sb.AppendLine();
             }
 
             // generate include
@@ -43,6 +41,16 @@ namespace DtsParser
                 foreach (var include in dtsDocument.Includes)
                 {
                     sb.AppendLine(include.ToString());
+                }
+                sb.AppendLine();
+            }
+
+            // generate comment
+            if (dtsDocument.Comments.Any())
+            {
+                foreach (var comment in dtsDocument.Comments)
+                {
+                    sb.AppendLine(comment);
                 }
                 sb.AppendLine();
             }

@@ -12,6 +12,8 @@ namespace DtsParser.Models
         public DtsNode RootNode { get; set; }
         public string Version { get; set; }
 
+        public Dtsmemreserve Dtsmemreserve { get; set; }
+
         public DtsDocument()
         {
             Includes = new List<DtsIncludeDirective>();

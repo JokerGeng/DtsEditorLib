@@ -40,6 +40,10 @@ namespace DtsParser
                 {
                     document.AddInclude(ParseIncludeDirective());
                 }
+                else if (Check(TokenType.Memreserve))
+                {
+                    document.Dtsmemreserve = Parsememreserve();
+                }
                 else if (Check(TokenType.Slash))
                 {
                     document.RootNode = ParseNode();
@@ -75,6 +79,20 @@ namespace DtsParser
             sb.Append(";");
 
             return sb.ToString();
+        }
+
+        private Dtsmemreserve Parsememreserve()
+        {
+            DtsValue address;
+            DtsValue size;
+            Consume(TokenType.Memreserve, "Expected '/memreserve/'");
+            SkipNewlines();
+            address = ParseCellArrayValue();
+            SkipNewlines();
+            size = ParseCellArrayValue();
+            SkipNewlines();
+            Consume(TokenType.Semicolon, "Expected ';'");
+            return new Dtsmemreserve(address, size);
         }
 
         public DtsIncludeDirective ParseIncludeDirective()

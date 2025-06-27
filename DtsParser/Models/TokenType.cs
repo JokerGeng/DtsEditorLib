@@ -106,6 +106,7 @@
         LogicalOr,    
 
         Bits,
+        Memreserve,
 
         // 字面量
         Identifier, String, Number, HexNumber, Character,
