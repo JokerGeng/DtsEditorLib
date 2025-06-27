@@ -198,19 +198,17 @@ namespace DtsParser
                         nextToken?.Type == TokenType.Colon ||
                         nextToken?.Type == TokenType.At)
                     {
-                        // 子节点
                         var childNode = ParseNode();
                         childNode.Parent = node;
                         node.AddChild(childNode);
                     }
                     else if (nextToken?.Type == TokenType.Equals || nextToken?.Type == TokenType.Comma)
                     {
-                        // 属性
                         node.AddProperty(ParseProperty());
                     }
                     else
                     {
-                        // 可能是没有值的属性
+                        // maybe property not have value
                         var propName = Advance().Value;
                         node.AddProperty(new DtsProperty(propName));
 
@@ -287,14 +285,17 @@ namespace DtsParser
             SkipNewlines();
             if (Check(TokenType.String))
             {
+                //string and string array
                 return ParseString();
             }
             else if (Check(TokenType.LeftAngle))
             {
+                //<>
                 return ParseCellArrayValue();
             }
             else if (Check(TokenType.Ampersand))
             {
+                //&
                 return ParseReferenceValue();
             }
             else if (Check(TokenType.Comment))
@@ -304,10 +305,12 @@ namespace DtsParser
             }
             else if (Check(TokenType.Bits) && PeekNext().Type == TokenType.Number)
             {
+                //bits
                 return ParseBitsLineValue();
             }
             else if (Check(TokenType.LeftBracket))
             {
+                //[]
                 return ParseBracketValue();
             }
             else
@@ -340,6 +343,8 @@ namespace DtsParser
             var valueStr = Consume(TokenType.String, "Expected string value").Value;
             DtsValue stringValue;
             stringValue = new DtsStringValue(valueStr);
+            SkipNewlines();
+            //avoid line breaks in the property for string array
             if (Peek().Type == TokenType.Comma)
             {
                 var dtsArrayValue = new DtsArrayStringValue();
@@ -367,11 +372,7 @@ namespace DtsParser
             {
                 SkipNewlines();
                 DtsValue childValue;
-                if (Check(TokenType.String))
-                {
-                    childValue = ParseCellStringValue();
-                }
-                else if (Check(TokenType.Ampersand))
+                if (Check(TokenType.Ampersand))
                 {
                     childValue = ParseReferenceValue();
                 }
@@ -475,11 +476,6 @@ namespace DtsParser
             return new DtsStringValue(stringValue);
         }
 
-        private DtsValue ParseCellStringValue()
-        {
-            var stringValue = Consume(TokenType.String, "Expected string value").Value;
-            return new DtsCellStringValue(stringValue);
-        }
 
         private DtsValue ParseNumberValue()
         {
@@ -552,6 +548,7 @@ namespace DtsParser
                 SkipNewlines();
             }
             if (Check(type)) return Advance();
+            message += $" on line:{Peek().Line}";
             throw new ParseException(message, Peek().Line);
         }
 

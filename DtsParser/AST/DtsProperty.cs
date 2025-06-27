@@ -20,12 +20,12 @@ namespace DtsParser.AST
 
         public string ToString(string indent)
         {
-            return Values?.Count > 0! ? $"{Name} = {string.Join($",\r{indent}", Values.Select(t => t.ToString()))};" : $"{Name};";
+            return Values?.Count > 0 ? $"{Name} = {string.Join($",\r{indent}", Values.Select(t => t.ToString()))};" : $"{Name};";
         }
 
         public override string ToString()
         {
-            return Values?.Count > 0! ? $"{Name} = {string.Join(",\r", Values.Select(t => t.ToString()))};" : $"{Name};";
+            return Values?.Count > 0 ? $"{Name} = {string.Join(",\r", Values.Select(t => t.ToString()))};" : $"{Name};";
         }
     }
 
