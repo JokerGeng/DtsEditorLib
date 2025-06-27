@@ -3,9 +3,7 @@ using System.Linq;
 
 namespace DtsParser
 {
-    /// <summary>
-    /// 数组值<val...>,[val1...]
-    /// </summary>
+    //<val...>
     public class DtsArrayValue : DtsValue
     {
         public List<DtsValue> Values { get; }

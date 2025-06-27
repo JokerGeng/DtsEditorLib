@@ -3,6 +3,7 @@ using System.Linq;
 
 namespace DtsParser
 {
+    //[val1...]
     public class DtsByteArrayValue : DtsValue
     {
         public List<string> Values { get; }
