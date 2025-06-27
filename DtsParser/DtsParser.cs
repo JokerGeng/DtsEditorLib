@@ -487,8 +487,9 @@ namespace DtsParser
 
         private DtsValue ParseHexNumberValue()
         {
-            var value = Convert.ToUInt64(Consume(TokenType.HexNumber, "Expected hex number").Value.Substring(2), 16);
-            return new DtsNumberValue(value, true);
+            var valueStr = Consume(TokenType.HexNumber, "Expected hex number").Value.Substring(2);
+            var value = Convert.ToUInt64(valueStr, 16);
+            return new DtsNumberValue(value, true, valueStr.Length);
         }
 
         #region [aiding method]

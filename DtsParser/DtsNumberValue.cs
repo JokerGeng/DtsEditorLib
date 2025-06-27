@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace DtsParser
 {
@@ -9,18 +7,25 @@ namespace DtsParser
     /// </summary>
     public class DtsNumberValue : DtsValue
     {
-        public UInt64 Value { get; set; }
-        public bool IsHex { get; set; }
+        public UInt64 Value { get; }
+        public bool IsHex { get; }
 
-        public DtsNumberValue(UInt64 value, bool isHex = false)
+        public int Length { get; }
+
+        public DtsNumberValue(UInt64 value, bool isHex = false, int length = -1)
         {
             Value = value;
             IsHex = isHex;
+            Length = length;
         }
 
         public override string ToString()
         {
-            return IsHex ? $"0x{Value:X}" : Value.ToString();
+            if (Length != -1 && IsHex)
+            {
+                return "0x" + Value.ToString($"X{Length}");
+            }
+            return Value.ToString();
         }
     }
 }
