@@ -83,14 +83,9 @@ namespace DtsParser
 
         private Dtsmemreserve Parsememreserve()
         {
-            DtsValue address;
-            DtsValue size;
             Consume(TokenType.Memreserve, "Expected '/memreserve/'");
-            SkipNewlines();
-            address = ParseCellArrayValue();
-            SkipNewlines();
-            size = ParseCellArrayValue();
-            SkipNewlines();
+            var address = ParseCellArrayValue();
+            var size = ParseCellArrayValue();
             Consume(TokenType.Semicolon, "Expected ';'");
             return new Dtsmemreserve(address, size);
         }

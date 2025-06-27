@@ -1,4 +1,7 @@
-﻿// SPDX-License-Identifier: GPL-2.0+
+﻿/dts-v1/;
+/memreserve/ <0x80000000> <0x00001000> ;
+
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * dts file for BlackSesame A1000-EVB
  *
@@ -14,6 +17,7 @@
 #include <dt-bindings/reset/bst-a1000b-resets.h>
 #include <dt-bindings/gpio/gpio.h>
 / {
+	resets = <&rstc RST_LSP0_UART0_SW 512 GIC_SPI 144 (GIC_CPU_MASK_SIMPLE(8) | IRQ_TYPE_LEVEL_HIGH)>;
 	compatible = "bst,a1000b";
 	#address-cells = <2>;
 	#size-cells = <2>;
