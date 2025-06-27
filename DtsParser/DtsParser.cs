@@ -319,24 +319,6 @@ namespace DtsParser
             }
         }
 
-        private DtsValue ParseBitsLineValue()
-        {
-            Consume(TokenType.Bits, "Expected 'bits'");
-            DtsBitsValue bitsValue = ParseBitsValue();
-            while (!Check(TokenType.Semicolon))
-            {
-                SkipNewlines();
-                DtsArrayValue value = ParseCellArrayValue();
-                bitsValue.Values.Add(value);
-                if (Peek().Type == TokenType.Comma)
-                {
-                    Consume(TokenType.Comma, "Expected ','");
-                }
-                SkipNewlines();
-            }
-            return bitsValue;
-        }
-
         private DtsValue ParseString()
         {
             SkipNewlines();
@@ -408,6 +390,45 @@ namespace DtsParser
             return valueTemp;
         }
 
+        private DtsBitsValue ParseBitsValue()
+        {
+            var token = Advance();
+            if (token.Type == TokenType.Number &&
+                (token.Value == "8" || token.Value == "16" ||
+                token.Value == "32" || token.Value == "64"))
+            {
+                var value = Convert.ToUInt16(token.Value);
+                return new DtsBitsValue(value);
+            }
+            throw new ParseException("Expected number after /bits/: must be 8, 16, 32, or 64");
+
+        }
+
+        private DtsValue ParseReferenceValue()
+        {
+            Consume(TokenType.Ampersand, "Expected '&'");
+            var refName = Consume(TokenType.Identifier, "Expected reference name").Value;
+            return new DtsReferenceValue(refName);
+        }
+
+        private DtsValue ParseBitsLineValue()
+        {
+            Consume(TokenType.Bits, "Expected 'bits'");
+            DtsBitsValue bitsValue = ParseBitsValue();
+            while (!Check(TokenType.Semicolon))
+            {
+                SkipNewlines();
+                DtsArrayValue value = ParseCellArrayValue();
+                bitsValue.Values.Add(value);
+                if (Peek().Type == TokenType.Comma)
+                {
+                    Consume(TokenType.Comma, "Expected ','");
+                }
+                SkipNewlines();
+            }
+            return bitsValue;
+        }
+
         //mac-address property
         // byte array
         private DtsByteArrayValue ParseBracketValue()
@@ -434,26 +455,6 @@ namespace DtsParser
             return valueTemp;
         }
 
-        private DtsBitsValue ParseBitsValue()
-        {
-            var token = Advance();
-            if (token.Type == TokenType.Number &&
-                (token.Value == "8" || token.Value == "16" ||
-                token.Value == "32" || token.Value == "64"))
-            {
-                var value = Convert.ToUInt16(token.Value);
-                return new DtsBitsValue(value);
-            }
-            throw new ParseException("Expected number after /bits/: must be 8, 16, 32, or 64");
-
-        }
-
-        private DtsValue ParseReferenceValue()
-        {
-            Consume(TokenType.Ampersand, "Expected '&'");
-            var refName = Consume(TokenType.Identifier, "Expected reference name").Value;
-            return new DtsReferenceValue(refName);
-        }
 
         private DtsValue ParseMultiLine()
         {
