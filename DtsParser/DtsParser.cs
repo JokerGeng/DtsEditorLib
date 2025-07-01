@@ -342,7 +342,7 @@ namespace DtsParser
             //avoid line breaks in the property for string array
             if (Peek().Type == TokenType.Comma)
             {
-                var dtsArrayValue = new DtsArrayStringValue();
+                var dtsArrayValue = new DtsListValue();
                 dtsArrayValue.Values.Add(new DtsStringValue(valueStr));
                 while (Check(TokenType.Semicolon) == false)
                 {
@@ -361,7 +361,7 @@ namespace DtsParser
         {
             Consume(TokenType.LeftAngle, "Expected '<'");
 
-            var valueTemp = new DtsArrayValue();
+            var valueTemp = new DtsCellValue();
             SkipNewlines();
             while (!Check(TokenType.RightAngle) && !IsAtEnd())
             {
@@ -403,20 +403,6 @@ namespace DtsParser
             return valueTemp;
         }
 
-        private DtsValue ParseBitsValue()
-        {
-            var token = Advance();
-            if (token.Type == TokenType.Number &&
-                (token.Value == "8" || token.Value == "16" ||
-                token.Value == "32" || token.Value == "64"))
-            {
-                var value = Convert.ToUInt16(token.Value);
-                return new DtsBitsValue(value);
-            }
-            throw new ParseException("Expected number after /bits/: must be 8, 16, 32, or 64");
-
-        }
-
         private DtsValue ParseReferenceValue()
         {
             Consume(TokenType.Ampersand, "Expected '&'");
@@ -440,6 +426,19 @@ namespace DtsParser
                 SkipNewlines();
             }
             return bitsValue;
+        }
+
+        private DtsValue ParseBitsValue()
+        {
+            var token = Advance();
+            if (token.Type == TokenType.Number &&
+                (token.Value == "8" || token.Value == "16" ||
+                token.Value == "32" || token.Value == "64"))
+            {
+                var value = Convert.ToUInt16(token.Value);
+                return new DtsBitsValue(value);
+            }
+            throw new ParseException("Expected number after /bits/: must be 8, 16, 32, or 64");
         }
 
         //mac-address property
@@ -479,7 +478,7 @@ namespace DtsParser
                 sb.Append(value);
                 SkipNewlines();
             }
-            var dtsValue = new DtsCellStringValue(sb.ToString());
+            var dtsValue = new DtsStringValue(sb.ToString(), false);
             return dtsValue;
         }
 

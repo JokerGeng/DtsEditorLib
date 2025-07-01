@@ -42,17 +42,17 @@ namespace DtsTest
                 var editor = new DtsEditor(deviceTree);
                 var newNode = editor.AddNode("/", "my-device", null, "0x1000000");
 
-                var compatibleValue = new DtsArrayStringValue();
+                var compatibleValue = new DtsListValue();
                 compatibleValue.Values.Add(new DtsStringValue("snps"));
                 compatibleValue.Values.Add(new DtsStringValue("dw-apb-uart"));
                 editor.AddProperty("/my-device@0x1000000", "compatible", new List<DtsValue>() { compatibleValue });
 
-                var regValue = new DtsArrayValue();
+                var regValue = new DtsCellValue();
                 regValue.Values.Add(new DtsNumberValue(0x1000000, true, 6));
                 regValue.Values.Add(new DtsNumberValue(0x1000, true, 4));
                 editor.AddProperty("/my-device@0x1000000", "reg", new List<DtsValue>() { regValue });
 
-                var interruptValue = new DtsArrayValue();
+                var interruptValue = new DtsCellValue();
                 interruptValue.Values.Add(new DtsReferenceValue("gic400"));
                 editor.BatchEdit(e =>
                 {

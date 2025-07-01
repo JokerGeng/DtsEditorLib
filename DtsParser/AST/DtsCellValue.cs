@@ -3,20 +3,20 @@ using System.Linq;
 
 namespace DtsParser.AST
 {
-    public class DtsArrayStringValue : DtsValue
+    //<val...>
+    public class DtsCellValue : DtsValue
     {
-        /// <summary>
-        /// main bearing <see cref="DtsStringValue"/>
-        /// </summary>
         public List<DtsValue> Values { get; }
 
-        public DtsArrayStringValue()
+        public DtsCellValue()
         {
             Values = new List<DtsValue>();
         }
+
         public override string ToString()
         {
-            return string.Join(", ", Values.Select(t => t.ToString()));
+            return $"<{string.Join(" ", Values.Select(t => t.ToString()))}>";
         }
     }
+
 }
