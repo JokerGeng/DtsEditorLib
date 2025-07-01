@@ -10,7 +10,7 @@ namespace DtsParser
     /// <summary>
     /// DTS树的打印工具
     /// </summary>
-    public static class DtsTreePrinter
+    public static class DtsPrinter
     {
         /// <summary>
         /// 打印DTS节点树

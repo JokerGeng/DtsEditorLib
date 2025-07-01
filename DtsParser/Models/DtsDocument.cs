@@ -1,6 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System.Collections.Generic;
+using System.Linq;
+using System.Xml.Linq;
 using DtsParser.AST;
 
 namespace DtsParser.Models
@@ -20,16 +20,19 @@ namespace DtsParser.Models
             Comments = new List<string>();
         }
 
-        public void AddInclude(DtsIncludeDirective include)
+        public DtsNode FindByName(string name)
         {
-            Includes.Add(include);
+            var nodes = GetAllNodes();
+            return nodes.FirstOrDefault(t => t.Name == name);
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="path">包含unitaddress</param>
-        /// <returns></returns>
+        public DtsNode FindByLabel(string label)
+        {
+            var nodes = GetAllNodes();
+            return nodes.FirstOrDefault(t => t.Label == label);
+        }
+
+        /// <param name="path">nodename@uintaddress</param>
         public DtsNode FindByPath(string path)
         {
             if (path == "/")
@@ -52,19 +55,6 @@ namespace DtsParser.Models
                 if (newPath.StartsWith(child.Name))
                 {
                     return FindChild(child, newPath);
-                }
-            }
-            return null;
-        }
-
-        public DtsNode FindByLabel(string label)
-        {
-            var nodes = GetAllNodes();
-            foreach (var node in nodes)
-            {
-                if (node.Label == label)
-                {
-                    return node;
                 }
             }
             return null;

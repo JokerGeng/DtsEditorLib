@@ -38,7 +38,7 @@ namespace DtsParser
                 }
                 else if (Check(TokenType.Include))
                 {
-                    document.AddInclude(ParseIncludeDirective());
+                    document.Includes.Add(ParseIncludeDirective());
                 }
                 else if (Check(TokenType.Memreserve))
                 {

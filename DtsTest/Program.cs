@@ -27,7 +27,7 @@ namespace DtsTest
                 var deviceTree = parser.ParseDocument();
 
                 //Console.WriteLine("=== Print Node Tree ===");
-                //DtsTreePrinter.PrintTree(deviceTree);
+                //DtsPrinter.PrintTree(deviceTree);
 
                 Console.WriteLine("=== Generator dts ===");
                 var genertrtor = new DtsGenerator(deviceTree);
@@ -38,14 +38,16 @@ namespace DtsTest
                 var node = deviceTree.FindByPath("/amba_apu@0/serial@2000a000");
                 var compatible = node.FindProperty("compatible");
 
-                Console.WriteLine("\n=== Edit dts tree ===");
+                Console.WriteLine("=== Edit dts tree ===");
                 var editor = new DtsEditor(deviceTree);
                 var newNode = editor.AddNode("/", "my-device", null, "0x1000000");
 
-                var compatibleValue = new DtsListValue();
-                compatibleValue.Values.Add(new DtsStringValue("snps"));
-                compatibleValue.Values.Add(new DtsStringValue("dw-apb-uart"));
-                editor.AddProperty("/my-device@0x1000000", "compatible", new List<DtsValue>() { compatibleValue });
+                var clockValue = new DtsListValue();
+                clockValue.Values.Add(new DtsStringValue("snps"));
+                clockValue.Values.Add(new DtsStringValue("dw-apb-uart"));
+                editor.AddProperty("/my-device@0x1000000", "clock-names", new List<DtsValue>() { clockValue });
+
+                editor.AddProperty("/my-device@0x1000000", "compatible", new List<DtsValue>() { new DtsStringValue("snps,dw-apb-uart") });
 
                 var regValue = new DtsCellValue();
                 regValue.Values.Add(new DtsNumberValue(0x1000000, true, 6));
