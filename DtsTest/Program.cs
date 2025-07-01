@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using DtsParser;
+using DtsParser.AST;
 
 namespace DtsTest
 {
@@ -30,21 +32,36 @@ namespace DtsTest
                 Console.WriteLine("=== Generator dts ===");
                 var genertrtor = new DtsGenerator(deviceTree);
                 var content = genertrtor.Generate();
-                File.WriteAllText("generate.dts", content);
+                File.WriteAllText("generate1.dts", content);
                 Console.WriteLine("=== Parse end ===");
 
-                //Console.WriteLine("\n=== Edit dts tree ===");
-                //var editor = new DtsEditor(deviceTree);
-                //var newNode = editor.AddNode("/", "my-device", 0x1000000);
-                //editor.AddProperty("/my-device", "compatible", default);
-                //editor.AddProperty("/my-device", "reg", new int[] { 0x1000000, 0x1000 }, PropertyValueType.IntegerArray);
-                //editor.AddProperty("/my-device", "status", "okay");
+                var node = deviceTree.FindByPath("/amba_apu@0/serial@2000a000");
+                var compatible = node.FindProperty("compatible");
 
-                //editor.BatchEdit(e =>
-                //{
-                //    e.AddProperty("/my-device", "interrupt-parent", "gic", PropertyValueType.LabelReference);
-                //    e.AddProperty("/my-device", "interrupts", new int[] { 0, 42, 4 }, PropertyValueType.IntegerArray);
-                //});
+                Console.WriteLine("\n=== Edit dts tree ===");
+                var editor = new DtsEditor(deviceTree);
+                var newNode = editor.AddNode("/", "my-device", null, "0x1000000");
+
+                var compatibleValue = new DtsArrayStringValue();
+                compatibleValue.Values.Add(new DtsStringValue("snps"));
+                compatibleValue.Values.Add(new DtsStringValue("dw-apb-uart"));
+                editor.AddProperty("/my-device@0x1000000", "compatible", new List<DtsValue>() { compatibleValue });
+
+                var regValue = new DtsArrayValue();
+                regValue.Values.Add(new DtsNumberValue(0x1000000, true, 6));
+                regValue.Values.Add(new DtsNumberValue(0x1000, true, 4));
+                editor.AddProperty("/my-device@0x1000000", "reg", new List<DtsValue>() { regValue });
+
+                var interruptValue = new DtsArrayValue();
+                interruptValue.Values.Add(new DtsReferenceValue("gic400"));
+                editor.BatchEdit(e =>
+                {
+                    e.AddProperty("/my-device@0x1000000", "interrupt-parent", new List<DtsValue>() { interruptValue });
+                    e.AddProperty("/my-device@0x1000000", "status", new List<DtsValue>() { new DtsStringValue("ok") });
+                });
+                content = genertrtor.Generate();
+                File.WriteAllText("generate2.dts", content);
+                Console.WriteLine("=== Edit end ===");
             }
             catch (Exception ex)
             {

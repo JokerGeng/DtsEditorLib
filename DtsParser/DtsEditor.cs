@@ -14,13 +14,13 @@ namespace DtsParser
             this.deviceTree = deviceTree;
         }
 
-        public DtsNode AddNode(string parentPath, string nodeName, uint? unitAddress)
+        public DtsNode AddNode(string parentPath, string nodeName, string label = null, string unitAddress = null)
         {
             var parent = deviceTree.FindByPath(parentPath);
             if (parent == null)
                 throw new ArgumentException($"Parent node not found: {parentPath}");
 
-            var newNode = new DtsNode(nodeName, 0);
+            var newNode = new DtsNode(nodeName, 0, label, unitAddress);
 
             parent.AddChild(newNode);
             return newNode;
@@ -38,14 +38,17 @@ namespace DtsParser
             return true;
         }
 
-        public void AddProperty(string nodePath, string propertyName, List<DtsValue> values)
+        public void AddProperty(string nodePath, string propertyName, List<DtsValue> values = null)
         {
             var node = deviceTree.FindByPath(nodePath);
             if (node == null)
                 throw new ArgumentException($"Node not found: {nodePath}");
 
             var property = new DtsProperty(propertyName);
-            property.Values.AddRange(values);
+            if(values != null)
+            {
+                property.Values.AddRange(values);
+            }
 
             node.AddProperty(property);
         }

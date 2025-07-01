@@ -25,6 +25,11 @@ namespace DtsParser.Models
             Includes.Add(include);
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="path">包含unitaddress</param>
+        /// <returns></returns>
         public DtsNode FindByPath(string path)
         {
             if (path == "/")

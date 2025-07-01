@@ -14,9 +14,15 @@ namespace DtsParser.AST
         public DtsNode Parent { get; set; }
         public int Line { get; }
 
-        public DtsNode(string name, int line, string label = null)
+        public string Path => GetPath();
+
+        public DtsNode(string name, int line, string label = null, string uintAddress = null)
         {
             Name = name;
+            if (uintAddress != null)
+            {
+                Name = Name + "@" + uintAddress;
+            }
             Line = line;
             Label = label;
             Properties = new List<DtsProperty>();
@@ -59,7 +65,7 @@ namespace DtsParser.AST
         /// <summary>
         /// 获取节点的完整路径
         /// </summary>
-        public string GetPath()
+        private string GetPath()
         {
             if (Parent == null)
                 return "/";

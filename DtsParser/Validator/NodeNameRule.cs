@@ -24,7 +24,7 @@ namespace DtsParser.Validator
                 {
                     Severity = ValidationSeverity.Error,
                     Message = $"Invalid node name '{node.Name}'. Node names must start with alphanumeric and contain only alphanumeric, underscore, dot, or hyphen.",
-                    NodePath = node.GetPath(),
+                    NodePath = node.Path,
                     LineNumber = node.Line,
                     RuleName = Name
                 });

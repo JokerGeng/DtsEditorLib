@@ -62,7 +62,7 @@ namespace DtsParser
                     diffs.Add(new DeviceTreeDiff
                     {
                         Type = DiffType.PropertyAdded,
-                        Path = newNode.GetPath(),
+                        Path = newNode.Path,
                         PropertyName = newProp.Name,
                         NewValue = newProp.Values,
                         Description = $"Property '{newProp.Name}' added"
@@ -73,7 +73,7 @@ namespace DtsParser
                     diffs.Add(new DeviceTreeDiff
                     {
                         Type = DiffType.PropertyModified,
-                        Path = newNode.GetPath(),
+                        Path = newNode.Path,
                         PropertyName = newProp.Name,
                         OldValue = find.Values,
                         NewValue = newProp.Values,
@@ -91,7 +91,7 @@ namespace DtsParser
                     diffs.Add(new DeviceTreeDiff
                     {
                         Type = DiffType.PropertyRemoved,
-                        Path = oldNode.GetPath(),
+                        Path = oldNode.Path,
                         PropertyName = oldProp.Name,
                         OldValue = oldProp.Values,
                         Description = $"Property '{oldProp.Name}' removed"
@@ -114,7 +114,7 @@ namespace DtsParser
                     diffs.Add(new DeviceTreeDiff
                     {
                         Type = DiffType.NodeAdded,
-                        Path = newChild.GetPath(),
+                        Path = newChild.Path,
                         Description = $"Node '{newChild.Name}' added"
                     });
 
@@ -137,7 +137,7 @@ namespace DtsParser
                     diffs.Add(new DeviceTreeDiff
                     {
                         Type = DiffType.NodeRemoved,
-                        Path = oldChild.GetPath(),
+                        Path = oldChild.Path,
                         Description = $"Node '{oldChild.Name}' removed"
                     });
                 }
@@ -152,7 +152,7 @@ namespace DtsParser
                 diffs.Add(new DeviceTreeDiff
                 {
                     Type = diffType == DiffType.NodeAdded ? DiffType.PropertyAdded : DiffType.PropertyRemoved,
-                    Path = node.GetPath(),
+                    Path = node.Path,
                     PropertyName = property.Name,
                     NewValue = diffType == DiffType.NodeAdded ? property.Values : null,
                     OldValue = diffType == DiffType.NodeRemoved ? property.Values : null
@@ -165,7 +165,7 @@ namespace DtsParser
                 diffs.Add(new DeviceTreeDiff
                 {
                     Type = diffType,
-                    Path = child.GetPath()
+                    Path = child.Path
                 });
                 AddAllDescendantsAsDiffs(child, diffType, diffs);
             }
